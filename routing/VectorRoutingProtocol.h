@@ -1,5 +1,3 @@
-
-
 #include <cstdint>
 #include <map>
 #include "Route.h"
@@ -18,6 +16,7 @@ namespace vector_routing_protocol {
         VectorRoutingProtocol();
         void register_echo(char * payload);
         char * build_custom_echo(uint32_t dest_node);
+        std::map<int32_t,struct Route *> get_routing_table();
         uint32_t my_address = 0;
 
     private:

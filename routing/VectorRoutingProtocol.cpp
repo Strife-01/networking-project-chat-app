@@ -5,9 +5,13 @@
 #include <iostream>
 #include <stdio.h>
 #include <cstdio>
+
+
 namespace vector_routing_protocol {
 
     VectorRoutingProtocol::VectorRoutingProtocol() {
+
+        
     }
 
 
@@ -313,6 +317,11 @@ namespace vector_routing_protocol {
 
         return serialize_table(tmp_routing_table);
 
+    }
+
+
+    std::map<int32_t,struct Route *> VectorRoutingProtocol::get_routing_table(){
+        return myRoutingTable;
     }
     
 }
