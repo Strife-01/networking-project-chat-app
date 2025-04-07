@@ -3,6 +3,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <stdio.h>
+#include <cstdio>
 namespace vector_routing_protocol {
 
     VectorRoutingProtocol::VectorRoutingProtocol() {
@@ -19,7 +22,8 @@ namespace vector_routing_protocol {
         /*
 
         PAYLOAD DIAGRAM :
-        [src_addr][dst_addr][payload_len][node_addr1,cost;node_addr2,cost;...]
+        [] -> 32 bits
+        [src_addr][dst_addr][payload_len][node_addr1][cost][node_addr2][cost]
         
         */
         uint32_t payload_len = ((uint32_t * ) payload)[2];
@@ -50,7 +54,8 @@ namespace vector_routing_protocol {
         /*
 
         PAYLOAD DIAGRAM :
-        [src_addr][dst_addr][payload_len][node_addr1,cost;node_addr2,cost;...]
+        [] -> 32 bits
+        [src_addr][dst_addr][payload_len][node_addr1][cost][node_addr2][cost]
         
         */
         char * payload = NULL;
@@ -102,7 +107,7 @@ namespace vector_routing_protocol {
         }
 
 
-        std::cout << "received echo from " << src_node_addr << " with "
+        std::cout<< "received echo from " << src_node_addr << " with "
         << recv_routing_table.size() << " rows"<<std::endl;
 
         uint32_t link_cost = calculate_link_cost_from_rtt(1);
@@ -152,7 +157,13 @@ namespace vector_routing_protocol {
                                 ||
                                 (myRoutingTable[dest_node]->TTL <= 0)
                             ){
-                                printf("Node %d is proposing a better cost to reach %d. ( %d vs %d )\n",src_node_addr,dest_node,potential_new_cost,myRoutingTable[dest_node].cost);
+                                printf("Node %d is proposing a better cost to reach %d. ( %d vs %d )\n",
+                                    src_node_addr,
+                                    dest_node,
+                                    potential_new_cost,
+                                    myRoutingTable[dest_node]->cost
+                                );
+                                
                                 myRoutingTable[dest_node]->cost = potential_new_cost;
                                 myRoutingTable[dest_node]->next_hop = src_node_addr;
                                 myRoutingTable[dest_node]->TTL =MAX_TTL;
