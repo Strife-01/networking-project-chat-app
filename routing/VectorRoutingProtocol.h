@@ -5,9 +5,9 @@
 #include "Route.h"
 
 #define BROADCAST_ADDR 0
-#define MAXIMUM_COST 1010
+#define MAXIMUM_COST 4
 #define INFINITY_COST 200000
-#define MAX_NODE_NUMBER 6
+#define MAX_NODE_NUMBER 4
 #define MAX_TTL 1
 
 
