@@ -22,15 +22,12 @@ namespace vector_routing_protocol {
 
     std::map<uint32_t,struct Route *> VectorRoutingProtocol::process_payload(char * payload){
 
-        /*
+        packet_header h;
+        h.header = ((unsigned int*) payload)[0];
 
-        PAYLOAD DIAGRAM :
-            payload_len will fit in the first data byte in the header
-        */
-
-        uint32_t payload_len = ((uint32_t * ) payload)[1];
-        uint32_t src_node_addr = ((uint32_t * ) payload)[0];
-        char * serialized_table = (char *) ( ((uint32_t * ) payload)+3 );
+        uint32_t payload_len = h.fields.payload_len;
+        uint32_t src_node_addr = h.fields.src_addr;
+        char * serialized_table = (char *) ( ((unsigned int*) payload)+1 );
 
 
         std::map<uint32_t,struct Route *> table;
@@ -52,22 +49,22 @@ namespace vector_routing_protocol {
 
     }
 
-    char * VectorRoutingProtocol::serialize_table(std::map<uint32_t,struct Route*> table){
+    unsigned char * VectorRoutingProtocol::serialize_table(std::map<uint32_t,struct Route*> table){
         /*
 
         PAYLOAD DIAGRAM :
         [] -> 32 bits
-        [src_addr][dst_addr][payload_len][node_addr1][cost][node_addr2][cost]
+        [node_addr1][cost][node_addr2][cost]
         
         */
-        char * payload = NULL;
+        unsigned char * payload = NULL;
         for(int i =0;i<table.size();i++){
             if(payload == NULL){
-                payload = (char * ) malloc(sizeof(uint32_t)*2);
+                payload = (unsigned char * ) malloc(sizeof(uint32_t)*2);
                 ((uint32_t *)payload)[0] = table[i]->destination_node;
                 ((uint32_t *)payload)[1] = table[i]->cost;
             }else{
-                payload = (char *) realloc(payload,sizeof(uint32_t)*2*i);
+                payload = (unsigned char *) realloc(payload,sizeof(uint32_t)*2*i);
                 ((uint32_t *)payload)[i] = table[i]->destination_node;
                 ((uint32_t *)payload)[i+1] = table[i]->cost;        
             }

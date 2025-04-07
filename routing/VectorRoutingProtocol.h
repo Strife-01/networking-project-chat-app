@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <map>
+#include <vector>
 #include "Route.h"
 #include "../utils/packet_header.h"
 
@@ -27,9 +28,15 @@ namespace vector_routing_protocol {
         std::map<int32_t,struct Route *> myRoutingTable;
         std::map<int32_t,bool> neighbors;
 
-        char * serialize_table(std::map<uint32_t,struct Route *>);
+        std::vector<char> serialize_table(std::map<uint32_t,struct Route *>);
         uint32_t calculate_link_cost_from_rtt(const int RTT);
         std::map<uint32_t,struct Route *> process_payload(char * payload);
     };
 
 }
+
+/*
+TODO :
+    FAIRE RENVOYER UN VECTOR DE CHAR A serialize_table
+
+*/
