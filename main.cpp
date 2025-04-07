@@ -44,8 +44,8 @@ void readInput(BlockingQueue< Message >*senderQueue) {
 int main() {
 	BlockingQueue< Message > receiverQueue; // Queue messages will arrive in
 	BlockingQueue< Message > senderQueue; // Queue for data to transmit
-
 	Client client = Client(SERVER_ADDR, SERVER_PORT, FREQUENCY, TOKEN, &senderQueue, &receiverQueue);
+
 	client.startThread();
 
 	thread inputHandler(readInput, &senderQueue);

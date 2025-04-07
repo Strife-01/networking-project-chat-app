@@ -83,7 +83,7 @@ namespace vector_routing_protocol {
         /*
         
         PAYLOAD DIAGRAM :
-        [src_addr][dst_addr][payload_len][node_addr1,cost;node_addr2,cost;...]
+        [src_addr][dst_addr][payload_len][node_addr1][cost][node_addr2][cost]
         
         */
         
