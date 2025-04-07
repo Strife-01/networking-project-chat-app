@@ -1,5 +1,4 @@
 #include "VectorRoutingProtocol.h"
-#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -256,74 +255,67 @@ namespace vector_routing_protocol {
 
     
         
-        }
-
-
-
-        /*
-         Instead of using Packet with a DataTable you may also use Packet with a std::vector<unsigned char>
-         as data part, if you really want to send your own data structure yourself.
-         Read the documentation in Packet.h to see how you can do this.
-         PLEASE NOTE! Although we provide this option we do not support it.
-         */
-
-        // resetting do not update table
-        char * VectorRoutingProtocol::build_custom_echo(uint32_t dest_node){
-
-            std::map<uint32_t,struct Route*> tmp_routing_table;
-
-            // split horizon poison reverse
-            for(int i=1;i<=MAX_NODE_NUMBER;i++){
-
-
-
-                struct Route * r  = (struct Route *) malloc(sizeof(struct Route));
-                *r = *myRoutingTable[i];
-
-                if(myRoutingTable.count(i)){
-
-
-                    // if we are trying to send a packet to 
-                    // a node that has one of our route passing throught it
-                    // set this route cost to infinity
-                    if(myRoutingTable[i]->next_hop == i){
-                        r->cost = INFINITY_COST;
-                    }else{
-
-                        // somehow we got a table full of 0 at the very start of the alrgorithm
-                        // We didn't manage to find WHY ????????????????????
-                        // so, here we are, doing some patch-up job x'(
-                        if( (myRoutingTable[i]->cost == 0) && (i != my_address) ){
-                            r->cost = INFINITY_COST;
-                        }
-
-                    }
-
-                }else{
-                    // path to ourselve
-                    if(i == my_address){
-                        r->cost = 0;
-                    }else{
-                        // node we don't know yet ( we know it exists because of the rule of 6)
-                        r->cost = INFINITY_COST;
-                    }
-                }
-                tmp_routing_table[i] = r;
-
-                        
-                    
-
-                    // pointless to send to non neighbours but well, it's more readable
-                    // decrements TTL
-                    myRoutingTable[i]->TTL --;
-
-            }
-
-            return serialize_table(tmp_routing_table);
-
-        }
-    
     }
+
+
+
+    // resetting do not update table
+    char * VectorRoutingProtocol::build_custom_echo(uint32_t dest_node){
+
+        std::map<uint32_t,struct Route*> tmp_routing_table;
+
+        // split horizon poison reverse
+        for(int i=1;i<=MAX_NODE_NUMBER;i++){
+
+
+
+            struct Route * r  = (struct Route *) malloc(sizeof(struct Route));
+            *r = *myRoutingTable[i];
+
+            if(myRoutingTable.count(i)){
+
+
+                // if we are trying to send a packet to 
+                // a node that has one of our route passing throught it
+                // set this route cost to infinity
+                if(myRoutingTable[i]->next_hop == i){
+                    r->cost = INFINITY_COST;
+                }else{
+
+                    // somehow we got a table full of 0 at the very start of the alrgorithm
+                    // We didn't manage to find WHY ????????????????????
+                    // so, here we are, doing some patch-up job x'(
+                    if( (myRoutingTable[i]->cost == 0) && (i != my_address) ){
+                        r->cost = INFINITY_COST;
+                    }
+
+                }
+
+            }else{
+                // path to ourselve
+                if(i == my_address){
+                    r->cost = 0;
+                }else{
+                    // node we don't know yet ( we know it exists because of the rule of 6)
+                    r->cost = INFINITY_COST;
+                }
+            }
+            tmp_routing_table[i] = r;
+
+                    
+                
+
+                // pointless to send to non neighbours but well, it's more readable
+                // decrements TTL
+                myRoutingTable[i]->TTL --;
+
+        }
+
+        return serialize_table(tmp_routing_table);
+
+    }
+    
+}
 
 
     

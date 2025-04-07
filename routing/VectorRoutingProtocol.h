@@ -16,10 +16,7 @@ namespace vector_routing_protocol {
     class VectorRoutingProtocol {
     public:
         VectorRoutingProtocol();
-        void register_echo(uint32_t address,uint32_t link_cost,char * payload);
-        std::map<uint32_t,struct Route *> process_payload(char * payload);
         void register_echo(char * payload);
-        uint32_t calculate_link_cost_from_rtt(const int RTT);
         char * build_custom_echo(uint32_t dest_node);
         uint32_t my_address = 0;
 
@@ -31,8 +28,8 @@ namespace vector_routing_protocol {
         std::map<int32_t,bool> neighbors;
 
         char * serialize_table(std::map<uint32_t,struct Route *>);
-
-
+        uint32_t calculate_link_cost_from_rtt(const int RTT);
+        std::map<uint32_t,struct Route *> process_payload(char * payload);
     };
 
 }
