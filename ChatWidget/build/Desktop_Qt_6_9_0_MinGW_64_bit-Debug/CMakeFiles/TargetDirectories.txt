@@ -1,0 +1,9 @@
+E:/金/Twente大学内容/本科Grade2/Module3/2025 NS/2025 project/ChatWidget/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug/CMakeFiles/ChatWidget.dir
+E:/金/Twente大学内容/本科Grade2/Module3/2025 NS/2025 project/ChatWidget/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug/CMakeFiles/edit_cache.dir
+E:/金/Twente大学内容/本科Grade2/Module3/2025 NS/2025 project/ChatWidget/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug/CMakeFiles/rebuild_cache.dir
+E:/金/Twente大学内容/本科Grade2/Module3/2025 NS/2025 project/ChatWidget/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug/CMakeFiles/list_install_components.dir
+E:/金/Twente大学内容/本科Grade2/Module3/2025 NS/2025 project/ChatWidget/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug/CMakeFiles/install.dir
+E:/金/Twente大学内容/本科Grade2/Module3/2025 NS/2025 project/ChatWidget/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug/CMakeFiles/install/local.dir
+E:/金/Twente大学内容/本科Grade2/Module3/2025 NS/2025 project/ChatWidget/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug/CMakeFiles/install/strip.dir
+E:/金/Twente大学内容/本科Grade2/Module3/2025 NS/2025 project/ChatWidget/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug/CMakeFiles/ChatWidget_autogen_timestamp_deps.dir
+E:/金/Twente大学内容/本科Grade2/Module3/2025 NS/2025 project/ChatWidget/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug/CMakeFiles/ChatWidget_autogen.dir
