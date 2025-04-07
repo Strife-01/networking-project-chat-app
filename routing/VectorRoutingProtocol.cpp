@@ -28,7 +28,7 @@ namespace vector_routing_protocol {
         */
         uint32_t payload_len = ((uint32_t * ) payload)[2];
         uint32_t src_node_addr = ((uint32_t * ) payload)[0];
-        char * serialized_table = (char *) ((uint32_t * ) payload)[3];
+        char * serialized_table = (char *) ( ((uint32_t * ) payload)+3 );
 
 
         std::map<uint32_t,struct Route *> table;
