@@ -7,7 +7,8 @@ typedef union {
         bool MF : 1;
         unsigned char msg_id : 3;
         unsigned short fragment_id : 11;
-        unsigned char data : 8; //we don't have any type that only takes 3 bytes
+        unsigned char type : 3;
+        unsigned char payload_len : 5;
         
     }fields;
 } packet_header;

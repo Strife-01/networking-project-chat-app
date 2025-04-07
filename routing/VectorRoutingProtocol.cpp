@@ -25,11 +25,10 @@ namespace vector_routing_protocol {
         /*
 
         PAYLOAD DIAGRAM :
-        [] -> 32 bits
-        [src_addr][dst_addr][payload_len][node_addr1][cost][node_addr2][cost]
-        
+            payload_len will fit in the first data byte in the header
         */
-        uint32_t payload_len = ((uint32_t * ) payload)[2];
+
+        uint32_t payload_len = ((uint32_t * ) payload)[1];
         uint32_t src_node_addr = ((uint32_t * ) payload)[0];
         char * serialized_table = (char *) ( ((uint32_t * ) payload)+3 );
 
@@ -84,10 +83,12 @@ namespace vector_routing_protocol {
         
         PAYLOAD DIAGRAM :
         [src_addr][dst_addr][payload_len][node_addr1][cost][node_addr2][cost]
-        
         */
+
+        packet_header h;
+        h.header = ((unsigned int * ) payload)[0];
         
-        uint32_t src_node_addr = ((uint32_t * ) payload)[0];
+        uint32_t src_node_addr = h.fields.src_addr;
         std::map<uint32_t,struct Route *> recv_routing_table = process_payload(payload);
         
 
