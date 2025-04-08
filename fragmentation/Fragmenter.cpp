@@ -8,7 +8,7 @@ std::vector<std::pair<packet_header, std::vector<char>>> Fragmenter::fragmentMes
 ) {
     std::vector<std::pair<packet_header, std::vector<char>>> fragments;
 
-    std::size_t headerSize = size_of(packet_header);
+    std::size_t headerSize = sizeof(packet_header);
     std::size_t maxPayloadSize = 32 - headerSize;
     std::size_t totalFragments = (message.size() + maxPayloadSize - 1) / maxPayloadSize;
 
