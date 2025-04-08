@@ -3,10 +3,11 @@
 #include <vector>
 #include "Route.h"
 #include "../utils/packet_header.h"
+#include "../addressing/Addressing.h"
 
 #define BROADCAST_ADDR 0
 #define MAXIMUM_COST 4
-#define INFINITY_COST 200000
+#define INFINITY_COST 5
 #define MAX_NODE_NUMBER 4
 #define MAX_TTL 1
 
@@ -16,27 +17,22 @@ namespace vector_routing_protocol {
     class VectorRoutingProtocol {
     public:
         VectorRoutingProtocol();
-        void register_echo(char * payload);
-        char * build_custom_echo(uint32_t dest_node);
-        std::map<int32_t,struct Route *> get_routing_table();
-        uint32_t my_address = 0;
+        void register_echo(std::vector<char>);
+        std::vector<char> build_custom_echo(uint32_t dest_node);
+        std::map<unsigned char,Route *> get_routing_table();
+        unsigned char my_address = 0;
 
     private:
         unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
-        std::map<int32_t,int32_t> address_to_node_number;
 
-        std::map<int32_t,struct Route *> myRoutingTable;
-        std::map<int32_t,bool> neighbors;
+        std::map<unsigned char,Route *> myRoutingTable;
+        std::map<unsigned char,bool> neighbors;
 
-        std::vector<char> serialize_table(std::map<uint32_t,struct Route *>);
+        std::vector<char> serialize_table(std::map<uint32_t,Route *>);
         uint32_t calculate_link_cost_from_rtt(const int RTT);
-        std::map<uint32_t,struct Route *> process_payload(char * payload);
+        std::map<uint32_t,Route *> process_payload(char * payload);
+
+        dynamic_addressing::DynamicAddressing THE_ADDRESSOR_20000;
     };
 
 }
-
-/*
-TODO :
-    FAIRE RENVOYER UN VECTOR DE CHAR A serialize_table
-
-*/
