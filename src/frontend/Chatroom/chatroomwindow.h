@@ -26,6 +26,10 @@ public:
     QListWidget *memberList;
     QLineEdit *messageInput;
     QPushButton *sendButton;
+    void updateMemberCount();
+    void addMember(const QString& memberName);
+    void removeMember(const QString& memberName);
+
 
 private slots:
     void handleMemberClick(QListWidgetItem *item);
@@ -33,6 +37,7 @@ private slots:
     void privateChatClosed(const QString &contactName);
 
 private:
+    QLabel* memberCountLabel;
     void setupGroupChatUI();
     QHash<QString, PrivateChatWindow*> privateChats; // Stores all active private chats
 };
