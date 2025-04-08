@@ -12,7 +12,8 @@ namespace Medium_Access_Control {
 
     void MediumAccessControl::recalculate_wait_time() {
         if (this->exponential_backoff < 10) {
-            this->time_to_wait = 1 << (this->exponential_backoff + 1);
+            this->time_to_wait = 1 << (this->exponential_backoff);
+            ++this->exponential_backoff;
             this->time_to_wait = Random::get<uint16_t>(0, this->time_to_wait);
         }
     }
