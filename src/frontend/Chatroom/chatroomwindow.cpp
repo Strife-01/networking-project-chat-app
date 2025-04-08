@@ -44,7 +44,9 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
     QWidget *rightPanel = new QWidget(splitter);
     QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
 
-    rightLayout->addWidget(new QLabel("Online Members (4 max):", rightPanel));
+    memberCountLabel = new QLabel("Online Members (4 max): 0", rightPanel);
+    memberCountLabel->setStyleSheet("QLabel { color: #555; font-weight: bold; }");
+    rightLayout->addWidget(memberCountLabel);
 
     memberList = new QListWidget(rightPanel);
     memberList->setStyleSheet(
@@ -57,7 +59,8 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
     // Add some example members
     QStringList members = {"Alice", "Bob", "Charlie"};
     memberList->addItems(members);
-    rightPanel->setFixedWidth(200);
+    updateMemberCount();
+    rightPanel->setFixedWidth(250);
 
     splitter->addWidget(leftPanel);
     splitter->addWidget(rightPanel);
@@ -66,7 +69,26 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
     // Connect signals
     connect(memberList, &QListWidget::itemClicked, this, &ChatRoomWindow::handleMemberClick);
 }
+void ChatRoomWindow::updateMemberCount()
+{
+    int count = memberList->count();
+    memberCountLabel->setText(QString("Online Members (4 max): %1").arg(count));
+}
 
+void ChatRoomWindow::addMember(const QString& memberName)
+{
+    memberList->addItem(memberName);
+    updateMemberCount();
+}
+
+void ChatRoomWindow::removeMember(const QString& memberName)
+{
+    QList<QListWidgetItem*> items = memberList->findItems(memberName, Qt::MatchExactly);
+    foreach(QListWidgetItem* item, items) {
+        delete memberList->takeItem(memberList->row(item));
+    }
+    updateMemberCount();
+}
 void ChatRoomWindow::handleMemberClick(QListWidgetItem *item)
 {
     QString memberName = item->text();
