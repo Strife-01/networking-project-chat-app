@@ -4,7 +4,6 @@
 ChatRoomWindow::ChatRoomWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-
     setWindowTitle("Chat Room");
     resize(800, 600);
 
@@ -24,7 +23,6 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
 
     chatDisplay = new QTextEdit(leftPanel);
     chatDisplay->setReadOnly(true);
-
     chatDisplay->setStyleSheet("QTextEdit { background-color: #f9f9f9; }");
     leftLayout->addWidget(new QLabel("Group Chat:", leftPanel));
     leftLayout->addWidget(chatDisplay);
@@ -40,7 +38,6 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
 
     inputLayout->addWidget(messageInput);
     inputLayout->addWidget(sendButton);
-
     leftLayout->addWidget(inputWidget);
 
     // Right side - Member list
@@ -58,30 +55,69 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
     rightLayout->addWidget(memberList);
 
     // Add some example members
-    QStringList members = {"Alice", "Bob", "Charlie", "You"};
+    QStringList members = {"Alice", "Bob", "Charlie"};
     memberList->addItems(members);
-
-    // Set member list width
     rightPanel->setFixedWidth(200);
 
     splitter->addWidget(leftPanel);
     splitter->addWidget(rightPanel);
-
     mainLayout->addWidget(splitter);
+
+    // Connect signals
+    connect(memberList, &QListWidget::itemClicked, this, &ChatRoomWindow::handleMemberClick);
 }
 
+void ChatRoomWindow::handleMemberClick(QListWidgetItem *item)
+{
+    QString memberName = item->text();
+
+    if (!privateChats.contains(memberName)) {
+        // Create new private chat window
+        PrivateChatWindow *privateChat = new PrivateChatWindow(memberName, this);
+        privateChats[memberName] = privateChat;
+
+        // Connect signals
+        connect(privateChat->privateSendButton, &QPushButton::clicked,
+                this, [this, memberName]() { sendPrivateMessage(memberName); });
+
+        // Handle window closing
+        connect(privateChat, &PrivateChatWindow::finished,
+                this, [this, memberName](int result) {
+                    Q_UNUSED(result);
+                    privateChats.remove(memberName);
+                });
+    }
+
+    // Show or bring to front
+    privateChats[memberName]->show();
+    privateChats[memberName]->raise();
+    privateChats[memberName]->activateWindow();
+}
+
+void ChatRoomWindow::sendPrivateMessage(const QString &recipient)
+{
+    if (!privateChats.contains(recipient)) return;
+
+    PrivateChatWindow *chatWindow = privateChats[recipient];
+    QString message = chatWindow->privateMessageInput->text();
+
+    if (!message.isEmpty()) {
+        chatWindow->privateChatDisplay->append("You: " + message);
+        chatWindow->privateMessageInput->clear();
+
+        // Here you would normally send the message over the network
+        // networkInterface->sendPrivateMessage(recipient, message);
+    }
+}
+void ChatRoomWindow::privateChatClosed(const QString &contactName)
+{
+    if (privateChats.contains(contactName)) {
+        privateChats.remove(contactName);
+    }
+}
 ChatRoomWindow::~ChatRoomWindow()
 {
-    // In ChatRoomWindow constructor, after setting up UI:
-    connect(memberList, &QListWidget::itemClicked, this, [this](QListWidgetItem *item) {
-        QString memberName = item->text();
-        if (memberName != "You") { // Don't open chat with yourself
-            privateChat->contactName = memberName;
-            privateChat->show();
-            //privatechatDisplay->clear();
-        }else{
-            privateChat->hide();
-
-        }
-    });
+    // Clean up all private chat windows
+    qDeleteAll(privateChats);
+    privateChats.clear();
 }

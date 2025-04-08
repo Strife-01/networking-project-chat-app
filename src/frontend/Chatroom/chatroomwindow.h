@@ -10,8 +10,8 @@
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QLabel>
+#include <QHash>
 #include "privatechatwindow.h"
-
 
 class ChatRoomWindow : public QMainWindow
 {
@@ -27,12 +27,14 @@ public:
     QLineEdit *messageInput;
     QPushButton *sendButton;
 
+private slots:
+    void handleMemberClick(QListWidgetItem *item);
+    void sendPrivateMessage(const QString &recipient);
+    void privateChatClosed(const QString &contactName);
+
 private:
     void setupGroupChatUI();
-
-    PrivateChatWindow *privateChat = new PrivateChatWindow("membername", this);
-
-
+    QHash<QString, PrivateChatWindow*> privateChats; // Stores all active private chats
 };
 
 #endif // CHATROOMWINDOW_H
