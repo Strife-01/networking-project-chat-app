@@ -19,15 +19,14 @@ namespace vector_routing_protocol {
         VectorRoutingProtocol();
         void register_echo(std::vector<char>);
         std::vector<char> build_custom_echo(uint32_t dest_node);
-        std::map<int32_t,Route *> get_routing_table();
+        std::map<unsigned char,Route *> get_routing_table();
         unsigned char my_address = 0;
 
     private:
         unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
-        std::map<int32_t,int32_t> address_to_node_number;
 
-        std::map<int32_t,Route *> myRoutingTable;
-        std::map<int32_t,bool> neighbors;
+        std::map<unsigned char,Route *> myRoutingTable;
+        std::map<unsigned char,bool> neighbors;
 
         std::vector<char> serialize_table(std::map<uint32_t,Route *>);
         uint32_t calculate_link_cost_from_rtt(const int RTT);

@@ -266,7 +266,7 @@ namespace vector_routing_protocol {
 
         // updating active neighbours table in the dynamic addressing handler
 
-        THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable)
+        THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable);
         
 
         printf("Transmitting data table to new nodes !\n");
@@ -335,7 +335,7 @@ namespace vector_routing_protocol {
     }
 
 
-    std::map<int32_t,Route *> VectorRoutingProtocol::get_routing_table(){
+    std::map<unsigned char,Route *> VectorRoutingProtocol::get_routing_table(){
         return myRoutingTable;
     }
     
