@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <vector>
 
 #define SRC_ADDRESS 0xE0000000
 #define NEXT_HOP_ADDRESS 0x1C000000
@@ -23,5 +24,6 @@ namespace packet_header {
     };
 
     Header get_separated_header(const uint32_t header);
+    std::vector<char> build_header(const Header& h);
 }
 

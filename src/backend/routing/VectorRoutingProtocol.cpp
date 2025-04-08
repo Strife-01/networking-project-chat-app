@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <cstdio>
 #include <vector>
+#include <iomanip>
 
 
 namespace vector_routing_protocol {
@@ -29,14 +30,15 @@ namespace vector_routing_protocol {
 
 
         Header h = extract_header(payload);
+        print_pkt_header(h);
 
         //printf("%d\n\n",h.fields.dst_addr);
         // TODO: fix types
 
         uint8_t payload_len = h.payload_length;
         uint8_t src_node_addr = h.source_address;
-        std::vector<char> serialized_table(payload.begin()+4,payload.end());
-
+        std::vector<char> serialized_table(payload.begin()+5,payload.end());
+        
 
         std::map<uint32_t,Route *> table;
         
@@ -45,7 +47,7 @@ namespace vector_routing_protocol {
         for(int i = 0;i<payload_len;i = i+2){
 
             Route * r = (Route *) malloc(sizeof(Route));
-
+            
             r->next_hop = src_node_addr;
             r->destination_node = serialized_table[i];
             r->cost = serialized_table[i+1];
@@ -371,8 +373,16 @@ namespace vector_routing_protocol {
     Header VectorRoutingProtocol::extract_header(std::vector<char> payload){
         uint32_t header = (payload[0] << 24) | (payload[1] << 16) | (payload[2] << 8) | payload[3];
         Header h = get_separated_header(header);
-        print_pkt_header(h);
         return h;
+    }
+
+    void VectorRoutingProtocol::print_route(Route * r){
+        printf("destination : %d | next_hop : %d | cost %d | TTL %d\n",
+            r->destination_node,
+            r->next_hop,
+            r->cost,
+            r->TTL
+        );
     }
     
 }

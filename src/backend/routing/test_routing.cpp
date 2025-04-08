@@ -7,6 +7,12 @@
 #include <vector>
 #include "VectorRoutingProtocol.h"
 
+
+/*
+TODO : see why returned table is empty; check if table serialization still stands
+
+*/
+
 // Mock classes or functions if necessary
 
 void test_calculate_link_cost_from_rtt() {
@@ -20,31 +26,25 @@ void test_process_payload() {
     vector_routing_protocol::VectorRoutingProtocol protocol;
 
     
-    packet_header pkt;
-    pkt.fields.dst_addr = 2;
-    pkt.fields.src_addr = 1;
-    pkt.fields.next_hop = 2;
-    pkt.fields.fragment_id = 1;
-    pkt.fields.MF = 0;
-    pkt.fields.msg_id = 1;
-    pkt.fields.payload_len = 8; // (4*2), 4 nodes, 2 1 byte fields per node => 8 bytes
-    pkt.fields.type = 1; // not defined yet, put 1 as test type
-
-    protocol.print_pkt_header(pkt);
-
+    packet_header::Header pkt;
+    pkt.dest_address = 2;
+    pkt.source_address = 1;
+    pkt.next_hop_address = 2;
+    pkt.fragment_id = 1;
+    pkt.more_fragments = 0;
+    pkt.message_id = 1;
+    pkt.payload_length = 8; // (4*2), 4 nodes, 2 1 byte fields per node => 8 bytes
+    pkt.type = 1; // not defined yet, put 1 as test type
 
 
     // [HEADER] + [DEST][COST]...
     std::vector<char> payload;
-        
+    std::vector<char> h_arr = packet_header::build_header(pkt);
     // 4 bytes header
-    for(int i = 3;i>=0;i--){
-        std::bitset<8>  x(pkt.bytes[i]);
-        std::cout<<"byte="<<x;
-        printf(" ; %d\n",i);
-        payload.push_back(pkt.bytes[i]); // WTF IT REVERSES THE BYTE ORDER WHEN ASSIGNED
-        
+    for(int i = 0;i<=4;i++){
+        payload.push_back(h_arr[i]);
     }
+    printf("built header\n");
 
     
     payload.push_back(0x01);

@@ -22,9 +22,6 @@ namespace vector_routing_protocol {
         std::map<unsigned char,Route *> get_routing_table();
         unsigned char my_address = 0;
 
-    private:
-        unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
-
         std::map<unsigned char,Route *> myRoutingTable;
         std::map<unsigned char,bool> neighbors;
 
@@ -35,6 +32,11 @@ namespace vector_routing_protocol {
         void print_table();
         void print_pkt_header(packet_header::Header pkt);
         packet_header::Header extract_header(std::vector<char> payload);
+        void print_route(Route * r);
+
+    private:
+        unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
+
 
     };
 

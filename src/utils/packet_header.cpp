@@ -3,6 +3,8 @@
 //
 
 #include "packet_header.h"
+#include <cstdio>
+#include <vector>
 
 packet_header::Header packet_header::get_separated_header(const uint32_t header) {
     Header result;
@@ -16,6 +18,28 @@ packet_header::Header packet_header::get_separated_header(const uint32_t header)
     result.payload_length = static_cast<uint8_t>(header & PAYLOAD_LENGTH);
     return result;
 }
+
+
+std::vector<char> packet_header::build_header(const Header& h) {
+    uint32_t header = 0;
+    header |= (static_cast<uint32_t>(h.source_address) << 29) & SRC_ADDRESS;
+    header |= (static_cast<uint32_t>(h.next_hop_address) << 26) & NEXT_HOP_ADDRESS;
+    header |= (static_cast<uint32_t>(h.dest_address) << 23) & DEST_ADDRESS;
+    header |= (static_cast<uint32_t>(h.more_fragments) << 22) & MORE_FRAGMENTS;
+    header |= (static_cast<uint32_t>(h.message_id) << 19) & MESSAGE_ID;
+    header |= (static_cast<uint32_t>(h.fragment_id) << 8) & FRAGMENT_ID;
+    header |= (static_cast<uint32_t>(h.type) << 5) & PAYLOAD_TYPE;
+    header |= static_cast<uint32_t>(h.payload_length) & PAYLOAD_LENGTH;
+
+    std::vector<char> ret;
+    ret.push_back(static_cast<char>((header & 0xFF000000)>>24));
+    ret.push_back(static_cast<char>((header & 0x00FF0000)>>16));
+    ret.push_back(static_cast<char>((header & 0x0000FF00)>>8));
+    ret.push_back(static_cast<char>(header & 0x000000FF));
+
+    return ret;
+}
+
 
 //typedef union {
 //    unsigned int header;
