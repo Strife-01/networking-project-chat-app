@@ -1,10 +1,15 @@
-namespace vector_routing_protocol {
+#ifndef ROUTE 
+    #define ROUTE
 
-    struct Route{
-        uint32_t next_hop;
-        uint32_t cost;
-        uint32_t destination_node;
-        uint32_t TTL;
-    };
+    namespace vector_routing_protocol {
 
-}
+        typedef struct Route{
+            unsigned char next_hop;
+            unsigned char cost;
+            unsigned char destination_node;
+            unsigned char TTL;
+        }Route;
+
+    }
+
+#endif

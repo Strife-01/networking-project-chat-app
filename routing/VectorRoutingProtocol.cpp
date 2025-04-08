@@ -5,13 +5,16 @@
 #include <iostream>
 #include <stdio.h>
 #include <cstdio>
+#include <vector>
 
 
 namespace vector_routing_protocol {
 
     VectorRoutingProtocol::VectorRoutingProtocol() {
 
-        
+        // first a foremost, to route something we need our own address :)
+        THE_ADDRESSOR_20000 = dynamic_addressing::DynamicAddressing();
+        THE_ADDRESSOR_20000.gen_random_addr();
     }
 
 
@@ -20,7 +23,7 @@ namespace vector_routing_protocol {
     }
 
 
-    std::map<uint32_t,struct Route *> VectorRoutingProtocol::process_payload(char * payload){
+    std::map<uint32_t,Route *> VectorRoutingProtocol::process_payload(char * payload){
 
         packet_header h;
         h.header = ((unsigned int*) payload)[0];
@@ -30,13 +33,13 @@ namespace vector_routing_protocol {
         char * serialized_table = (char *) ( ((unsigned int*) payload)+1 );
 
 
-        std::map<uint32_t,struct Route *> table;
+        std::map<uint32_t,Route *> table;
         
         // loop through the table
 
         for(int i = 0;i<payload_len;i = i+2){
 
-            struct Route * r = (struct Route *) malloc(sizeof(struct Route));
+            Route * r = (Route *) malloc(sizeof(Route));
 
             r->next_hop = src_node_addr;
             r->destination_node = ((uint32_t *) serialized_table)[i];
@@ -49,25 +52,26 @@ namespace vector_routing_protocol {
 
     }
 
-    unsigned char * VectorRoutingProtocol::serialize_table(std::map<uint32_t,struct Route*> table){
-        /*
+    std::vector<char> VectorRoutingProtocol::serialize_table(std::map<uint32_t,Route*> table){
 
-        PAYLOAD DIAGRAM :
-        [] -> 32 bits
-        [node_addr1][cost][node_addr2][cost]
-        
-        */
-        unsigned char * payload = NULL;
+        std::vector<char> payload;
+
         for(int i =0;i<table.size();i++){
-            if(payload == NULL){
+
+            payload.push_back(table[i]->destination_node);
+            payload.push_back(table[i]->cost);
+            /*if(payload.empty()){
                 payload = (unsigned char * ) malloc(sizeof(uint32_t)*2);
+                
                 ((uint32_t *)payload)[0] = table[i]->destination_node;
                 ((uint32_t *)payload)[1] = table[i]->cost;
+                payload.insert(table[i]->destination_node);
+                payload.insert(table[i]->cost)
             }else{
                 payload = (unsigned char *) realloc(payload,sizeof(uint32_t)*2*i);
                 ((uint32_t *)payload)[i] = table[i]->destination_node;
                 ((uint32_t *)payload)[i+1] = table[i]->cost;        
-            }
+            }*/
         }
         return payload;
 
@@ -75,27 +79,25 @@ namespace vector_routing_protocol {
 
 
 
-    void VectorRoutingProtocol::register_echo(char * payload) {
-        /*
-        
-        PAYLOAD DIAGRAM :
-        [src_addr][dst_addr][payload_len][node_addr1][cost][node_addr2][cost]
-        */
+    void VectorRoutingProtocol::register_echo(std::vector<char> shitty_format_payload) {
+ 
 
+        char * payload = shitty_format_payload.data();
+        
         packet_header h;
         h.header = ((unsigned int * ) payload)[0];
-        
+
         uint32_t src_node_addr = h.fields.src_addr;
-        std::map<uint32_t,struct Route *> recv_routing_table = process_payload(payload);
+        std::map<uint32_t,Route *> recv_routing_table = process_payload(payload);
         
 
         // myself
-        if(myRoutingTable.count(my_address) <= 0){
-            struct Route * r = (struct Route *) malloc(sizeof(struct Route *));
-            r->next_hop = my_address;
+        if(myRoutingTable.count(THE_ADDRESSOR_20000.my_addr) <= 0){
+            Route * r = (Route *) malloc(sizeof(Route *));
+            r->next_hop = THE_ADDRESSOR_20000.my_addr;
             r->cost = 0;
-            r->destination_node = my_address;
-            myRoutingTable[my_address]=r; 
+            r->destination_node = THE_ADDRESSOR_20000.my_addr;
+            myRoutingTable[THE_ADDRESSOR_20000.my_addr]=r; 
         }
 
 
@@ -113,16 +115,27 @@ namespace vector_routing_protocol {
 
         uint32_t link_cost = calculate_link_cost_from_rtt(1);
 
-        // first process the incoming packets; loop over them:
         for (int i = 0; i < recv_routing_table.size(); i++) {
 
              // we will use the node address as node index in the table
             if(this->neighbors.count(src_node_addr) <= 0){
 
                 printf("Got a new neighbor !! Discovered node %d\n",src_node_addr);
+                printf("Checking if it does not share the same address as ours\n");
+
+                if(src_node_addr == THE_ADDRESSOR_20000.my_addr){
+                    printf("Oh NOOO ! Address collision. Starting recovery process...");
+                    
+                    THE_ADDRESSOR_20000.gen_random_addr();
+                }else{
+                    // still, new node means we have to register it
+                    THE_ADDRESSOR_20000.register_addr_used_by_another_node(src_node_addr);
+                }
+
+
                 unsigned int potential_new_cost = link_cost;
                 // insert newly discovered route in the table
-                struct Route * r = (struct Route *) malloc(sizeof(struct Route *));
+                Route * r = (Route *) malloc(sizeof(Route *));
                 r->next_hop = src_node_addr;
                 r->cost = potential_new_cost;
                 r->TTL =MAX_TTL;
@@ -172,10 +185,10 @@ namespace vector_routing_protocol {
 
                         }else{
 
-                            if(i != my_address){
+                            if(i != THE_ADDRESSOR_20000.my_addr){
                                 printf("Got a new route !! Discovered node %d\n",dest_node);
                                 // insert newly discovered route in the table
-                                struct Route * r = (struct Route *) malloc(sizeof(struct Route *));
+                                Route * r = (Route *) malloc(sizeof(Route *));
                                 r->next_hop = src_node_addr;
                                 r->cost = potential_new_cost;
                                 r->TTL =MAX_TTL;
@@ -251,6 +264,10 @@ namespace vector_routing_protocol {
 
 
 
+        // updating active neighbours table in the dynamic addressing handler
+
+        THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable)
+        
 
         printf("Transmitting data table to new nodes !\n");
 
@@ -262,16 +279,16 @@ namespace vector_routing_protocol {
 
 
     // resetting do not update table
-    char * VectorRoutingProtocol::build_custom_echo(uint32_t dest_node){
+    std::vector<char> VectorRoutingProtocol::build_custom_echo(uint32_t dest_node){
 
-        std::map<uint32_t,struct Route*> tmp_routing_table;
+        std::map<uint32_t,Route*> tmp_routing_table;
 
         // split horizon poison reverse
         for(int i=1;i<=MAX_NODE_NUMBER;i++){
 
 
 
-            struct Route * r  = (struct Route *) malloc(sizeof(struct Route));
+            Route * r  = (Route *) malloc(sizeof(Route));
             *r = *myRoutingTable[i];
 
             if(myRoutingTable.count(i)){
@@ -287,7 +304,7 @@ namespace vector_routing_protocol {
                     // somehow we got a table full of 0 at the very start of the alrgorithm
                     // We didn't manage to find WHY ????????????????????
                     // so, here we are, doing some patch-up job x'(
-                    if( (myRoutingTable[i]->cost == 0) && (i != my_address) ){
+                    if( (myRoutingTable[i]->cost == 0) && (i != THE_ADDRESSOR_20000.my_addr) ){
                         r->cost = INFINITY_COST;
                     }
 
@@ -295,7 +312,7 @@ namespace vector_routing_protocol {
 
             }else{
                 // path to ourselve
-                if(i == my_address){
+                if(i == THE_ADDRESSOR_20000.my_addr){
                     r->cost = 0;
                 }else{
                     // node we don't know yet ( we know it exists because of the rule of 6)
@@ -318,7 +335,7 @@ namespace vector_routing_protocol {
     }
 
 
-    std::map<int32_t,struct Route *> VectorRoutingProtocol::get_routing_table(){
+    std::map<int32_t,Route *> VectorRoutingProtocol::get_routing_table(){
         return myRoutingTable;
     }
     
