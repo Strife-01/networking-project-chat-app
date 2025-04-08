@@ -22,7 +22,6 @@ public:
 
     QString contactName;
 
-
 private:
     void setupPrivateChatUI();
 };

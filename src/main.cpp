@@ -6,14 +6,12 @@
 #include "utils/BlockingQueue.h"
 #include "backend/network/Client.h"
 #include "utils/Message.h"
+#include "backend/mac/MediumAccessControl.h"
+#include "backend/channel_state/ChannelState.h"
 
-// The address to connect to. Set this to localhost to use the audio interface tool.
 std::string SERVER_ADDR = "netsys.ewi.utwente.nl"; //"127.0.0.1"
-// The port to connect to. 8954 for the simulation server
 int SERVER_PORT = 8954;
-// The frequency to connect on.
-int FREQUENCY = 7800; //TODO: Set this to your group frequency!
-// The token you received for your frequency range
+int FREQUENCY = 7800;
 std::string TOKEN = "cpp-03-7E6C90A2264E5B3996";
 
 using namespace std;
@@ -21,9 +19,8 @@ using namespace std;
 void readInput(BlockingQueue< Message >*senderQueue) {
 	while (true) {
 		string input;
-		getline(cin, input); //read input from stdin
-		//cout << "Input: " << bla << endl;
-		vector<char> char_vec(input.begin(), input.end()); // put input in char vector
+		getline(cin, input);
+		vector<char> char_vec(input.begin(), input.end());
 		Message sendMessage;
 		if (char_vec.size() > 2) {
 			sendMessage = Message(DATA, char_vec);
@@ -31,7 +28,7 @@ void readInput(BlockingQueue< Message >*senderQueue) {
 		else {
 			sendMessage = Message(DATA_SHORT, char_vec);
 		}		
-		senderQueue->push(sendMessage); // put char vector in the senderQueue
+		senderQueue->push(sendMessage);
 	}
 }
 
@@ -47,7 +44,7 @@ int main() {
 	// Handle messages from the server / audio framework
 	while(true){
 		Message temp = receiverQueue.pop(); // wait for a message to arrive
-		// cout << "Received: " << temp.type << endl; // print received chars
+		cout << "Received: " << temp.type << endl;
 		switch (temp.type) {
 		case DATA: // We received a data frame!
 			cout << "DATA: ";
@@ -64,17 +61,19 @@ int main() {
 			cout << endl;
 			break;
 		case FREE: // The channel is no longer busy (no nodes are sending within our detection range)
-			cout << "FREE" << endl;
+			Channel_State::chan_state.reset_is_line_busy();
 			break;
 		case BUSY: // The channel is busy (A node is sending within our detection range)
-			cout << "BUSY" << endl;
+			Channel_State::chan_state.set_is_line_busy();
 			break;
 		case SENDING: // This node is sending
-			cout << "SENDING" << endl;
+            Channel_State::chan_state.set_is_line_busy();
+            Channel_State::chan_state.set_is_current_node_sending();
 			break;
 		case DONE_SENDING: // This node is done sending
-			cout << "DONE_SENDING" << endl;
-			break;
+			Channel_State::chan_state.reset_is_line_busy();
+			Channel_State::chan_state.reset_is_current_node_sending();
+            break;
 		case END: // Server / audio framework disconnect message. You don't have to handle this
 			cout << "END" << endl;
 			break;

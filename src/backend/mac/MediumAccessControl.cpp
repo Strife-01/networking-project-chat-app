@@ -6,7 +6,7 @@
 
 namespace Medium_Access_Control {
     MediumAccessControl::MediumAccessControl()
-    : time_to_wait ( 0 ), exponential_backoff ( 0 ), is_line_busy ( false )
+    : time_to_wait ( 0 ), exponential_backoff ( 0 )
     {
     }
 
@@ -31,18 +31,6 @@ namespace Medium_Access_Control {
         if (this->time_to_wait > 0) {
           --this->time_to_wait;
         }
-    }
-
-    void MediumAccessControl::set_is_line_busy() {
-        this->is_line_busy = true;
-    }
-
-    void MediumAccessControl::reset_is_line_busy() {
-        this->is_line_busy = false;
-    }
-
-    bool MediumAccessControl::get_is_line_busy() const {
-        return this->is_line_busy;
     }
 
     uint8_t MediumAccessControl::get_exponential_backoff() const {
