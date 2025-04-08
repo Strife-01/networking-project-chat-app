@@ -1,4 +1,5 @@
 #include "VectorRoutingProtocol.h"
+#include <bitset>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -23,14 +24,15 @@ namespace vector_routing_protocol {
     }
 
 
-    std::map<uint32_t,Route *> VectorRoutingProtocol::process_payload(char * payload){
+    std::map<uint32_t,Route *> VectorRoutingProtocol::process_payload(std::vector<char> payload){
 
-        packet_header h;
-        h.header = ((unsigned int*) payload)[0];
+        packet_header h = extract_header(payload);
+
+        //printf("%d\n\n",h.fields.dst_addr);
 
         uint32_t payload_len = h.fields.payload_len;
         uint32_t src_node_addr = h.fields.src_addr;
-        char * serialized_table = (char *) ( ((unsigned int*) payload)+1 );
+        std::vector<char> serialized_table(payload.begin()+4,payload.end());
 
 
         std::map<uint32_t,Route *> table;
@@ -42,9 +44,9 @@ namespace vector_routing_protocol {
             Route * r = (Route *) malloc(sizeof(Route));
 
             r->next_hop = src_node_addr;
-            r->destination_node = ((uint32_t *) serialized_table)[i];
-            r->cost = ((uint32_t *) serialized_table)[i+1];
-            table[((uint32_t *) serialized_table)[i]] = r;
+            r->destination_node = serialized_table[i];
+            r->cost = serialized_table[i+1];
+            table[serialized_table[i]] = r;
         }
 
 
@@ -79,13 +81,10 @@ namespace vector_routing_protocol {
 
 
 
-    void VectorRoutingProtocol::register_echo(std::vector<char> shitty_format_payload) {
+    void VectorRoutingProtocol::register_echo(std::vector<char> payload) {
  
-
-        char * payload = shitty_format_payload.data();
         
-        packet_header h;
-        h.header = ((unsigned int * ) payload)[0];
+        packet_header h = extract_header(payload);
 
         uint32_t src_node_addr = h.fields.src_addr;
         std::map<uint32_t,Route *> recv_routing_table = process_payload(payload);
@@ -337,6 +336,58 @@ namespace vector_routing_protocol {
 
     std::map<unsigned char,Route *> VectorRoutingProtocol::get_routing_table(){
         return myRoutingTable;
+    }
+
+
+    void VectorRoutingProtocol::print_table(){
+        puts("| NODE | COST | NXTHOP |\n");
+
+        for(int i=0;i<myRoutingTable.size();i++){
+            printf("|  %d  |  %d  |  %d  |\n",
+                myRoutingTable[i]->destination_node,
+                myRoutingTable[i]->cost,
+                myRoutingTable[i]->next_hop
+            );
+        }
+    }
+
+    void VectorRoutingProtocol::print_pkt_header(packet_header pkt){
+
+        std::bitset<32> x(pkt.header);
+        std::cout<<x<<std::endl;
+        std::cout << "Packet Header Content:\n";
+        std::cout << "----------------------\n";
+        std::cout << std::setw(20) << std::left << "Payload Length:" << static_cast<int>(pkt.fields.payload_len) << "\n";
+        std::cout << std::setw(20) << std::left << "Type:" << static_cast<int>(pkt.fields.type) << "\n";
+        std::cout << std::setw(20) << std::left << "Fragment ID:" << pkt.fields.fragment_id << "\n";
+        std::cout << std::setw(20) << std::left << "Message ID:" << static_cast<int>(pkt.fields.msg_id) << "\n";
+        std::cout << std::setw(20) << std::left << "More Fragments (MF):" << std::boolalpha << pkt.fields.MF << "\n";
+        std::cout << std::setw(20) << std::left << "Destination Address:" << static_cast<int>(pkt.fields.dst_addr) << "\n";
+        std::cout << std::setw(20) << std::left << "Next Hop:" << static_cast<int>(pkt.fields.next_hop) << "\n";
+        std::cout << std::setw(20) << std::left << "Source Address:" << static_cast<int>(pkt.fields.src_addr) << "\n";
+        std::cout << "----------------------\n";
+    }
+
+    packet_header VectorRoutingProtocol::extract_header(std::vector<char> payload){
+        
+        packet_header h;
+        h.header = 0;
+        
+        // Combine the 4 bytes into a single 32-bit integer
+        uint32_t header = (payload[0] << 24) | (payload[1] << 16) | (payload[2] << 8) | payload[3];
+
+        // Extract each field using bitmasks
+        h.fields.payload_len = (header >> 27) & 0x1F; // 5 bits
+        h.fields.type = (header >> 24) & 0x07; // 3 bits
+        h.fields.fragment_id = (header >> 13) & 0x7FF; // 11 bits
+        h.fields.msg_id = (header >> 10) & 0x07; // 3 bits
+        h.fields.MF = (header >> 9) & 0x01; // 1 bit
+        h.fields.dst_addr = (header >> 6) & 0x07; // 3 bits
+        h.fields.next_hop = (header >> 3) & 0x07; // 3 bits
+        h.fields.src_addr = header & 0x07; // 3 bits
+
+        return h;
+
     }
     
 }

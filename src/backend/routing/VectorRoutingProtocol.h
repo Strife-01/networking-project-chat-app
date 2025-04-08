@@ -30,9 +30,12 @@ namespace vector_routing_protocol {
 
         std::vector<char> serialize_table(std::map<uint32_t,Route *>);
         uint32_t calculate_link_cost_from_rtt(const int RTT);
-        std::map<uint32_t,Route *> process_payload(char * payload);
-
+        std::map<uint32_t,Route *> process_payload(std::vector<char> payload);
         dynamic_addressing::DynamicAddressing THE_ADDRESSOR_20000;
+        void print_table();
+        void print_pkt_header(packet_header pkt);
+        packet_header extract_header(std::vector<char> payload);
+
     };
 
 }
