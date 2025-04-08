@@ -52,7 +52,8 @@ void test_basic_functionality() {
 
 }
 
-// to run this from the root dir: g++ -std=c++17 -I. fragmentation/test_fragmentation.cpp fragmentation/Fragmenter.cpp fragmentation/Reassembler.cpp -o fragtest ./fragtest
+// to run this from the root dir: g++ -std=c++17 -I. src/backend/fragmentation/test_fragmentation.cpp src/backend/fragmentation/Fragmenter.cpp src/backend/fragmentation/Reassembler.cpp -o fragtest
+
 
 int main() {
     test_basic_functionality();
