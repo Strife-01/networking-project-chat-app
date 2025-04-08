@@ -4,14 +4,8 @@
 #include <vector>
 
 #include "utils/BlockingQueue.h"
-#include "network/Client.h"
+#include "backend/network/Client.h"
 #include "utils/Message.h"
-
-/**
-* This is just some example code to show you how to interact 
-* with the server using the provided client and two queues.
-* Feel free to modify this code in any way you like!
-*/
 
 // The address to connect to. Set this to localhost to use the audio interface tool.
 std::string SERVER_ADDR = "netsys.ewi.utwente.nl"; //"127.0.0.1"

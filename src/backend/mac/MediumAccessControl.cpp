@@ -1,5 +1,5 @@
 //
-// Created by Andrei Ursachi on 08.04.2025.
+// Created by Strife on 08.04.2025.
 //
 
 #include "MediumAccessControl.h"

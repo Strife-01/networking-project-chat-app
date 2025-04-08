@@ -15,8 +15,8 @@
 #endif
 
 #include <list>
-#include "../utils/BlockingQueue.h"
-#include "../utils/Message.h"
+#include "../../utils/BlockingQueue.h"
+#include "../../utils/Message.h"
 #include "Client.h"
 #include "DataReceiver.h"
 

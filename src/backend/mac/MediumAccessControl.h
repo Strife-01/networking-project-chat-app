@@ -4,7 +4,7 @@
 #ifndef MEDIUMACCESSCONTROL_H
 #define MEDIUMACCESSCONTROL_H
 #include <cstdint>
-#include "../utils/Random.h"
+#include "../../utils/Random.h"
 
 namespace Medium_Access_Control {
 

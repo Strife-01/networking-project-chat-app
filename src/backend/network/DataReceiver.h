@@ -1,6 +1,6 @@
-#include "../utils/BlockingQueue.h"
-#include "../utils/Message.h"
-#include "../utils/MessageType.h"
+#include "../../utils/BlockingQueue.h"
+#include "../../utils/Message.h"
+#include "../../utils/MessageType.h"
 
 class DataReceiver {
 private:

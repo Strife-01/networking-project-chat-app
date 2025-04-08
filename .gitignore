@@ -25,7 +25,10 @@
 *.la
 *.a
 *.lib
+
+# Config files for ides
 .vs
+.idea
 
 # Executables
 *.exe
