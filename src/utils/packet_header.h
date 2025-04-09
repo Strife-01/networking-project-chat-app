@@ -1,6 +1,11 @@
-#pragma once
+#ifndef HEADER
+#define HEADER
+
 #include <cstdint>
 #include <vector>
+#include "../backend/routing/Route.h"
+#include <map>
+
 
 #define SRC_ADDRESS 0xE0000000
 #define NEXT_HOP_ADDRESS 0x1C000000
@@ -12,6 +17,12 @@
 #define PAYLOAD_LENGTH 0x0000001F
 
 namespace packet_header {
+
+    enum types:uint8_t{
+        echo,
+        data
+    };
+    
     struct __attribute__((__packed__)) Header {
         uint16_t fragment_id;
         uint8_t source_address;
@@ -25,5 +36,11 @@ namespace packet_header {
 
     Header get_separated_header(const uint32_t header);
     std::vector<char> build_header(const Header& h);
+
+    uint32_t bytes_vector_to_header_int(std::vector<char> packet);
+    
+    std::vector<char> add_header_to_payload(packet_header::Header h,std::vector<char> payload);
+    std::vector<char> prepare_header_to_forward(std::vector<char> packet, std::map<unsigned char,vector_routing_protocol::Route *> table);
 }
 
+#endif

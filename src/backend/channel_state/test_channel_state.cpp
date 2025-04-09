@@ -3,38 +3,23 @@
 //
 
 #include "ChannelState.h"
-#include <cassert>
-#include <iostream>
+#include "../../utils/test_framework.h"
 
 int main() {
     using namespace Channel_State;
-    std::cout << "[TEST] Channel State initial state" << std::endl;
-    std::cout << "[TEST] chan_state.is_line_busy == false" << std::endl;
-    assert(chan_state.get_is_line_busy() == false);
-    std::cout << "[TEST_PASSED]\n" << std::endl;
-
-    std::cout << "[TEST] chan_state.is_current_node_sending == false" << std::endl;
-    assert(chan_state.get_is_current_node_sending() == false);
-    std::cout << "[TEST_PASSED]\n" << std::endl;
+    test_framework::test_assert(chan_state.get_is_line_busy(), false, "chan_state.is_line_busy == false", "Channel State initial state");
+    test_framework::test_assert(chan_state.get_is_current_node_sending(), false, "chan_state.is_current_node_sending == false");
 
     chan_state.set_is_line_busy();
-    std::cout << "[TEST] chan_state.is_line_busy == true" << std::endl;
-    assert(chan_state.get_is_line_busy() == true);
-    std::cout << "[TEST_PASSED]\n" << std::endl;
+    test_framework::test_assert(chan_state.get_is_line_busy(), true, "chan_state.is_line_busy == true");
 
     chan_state.reset_is_line_busy();
-    std::cout << "[TEST] chan_state.is_line_busy == false" << std::endl;
-    assert(chan_state.get_is_line_busy() == false);
-    std::cout << "[TEST_PASSED]\n" << std::endl;
+    test_framework::test_assert(chan_state.get_is_line_busy(), false, "chan_state.is_line_busy == false");
 
     chan_state.set_is_current_node_sending();
-    std::cout << "[TEST] chan_state.is_current_node_sending == true" << std::endl;
-    assert(chan_state.get_is_current_node_sending() == true);
-    std::cout << "[TEST_PASSED]\n" << std::endl;
+    test_framework::test_assert(chan_state.get_is_current_node_sending(), true, "chan_state.is_current_node_sending == true", "");
 
     chan_state.reset_is_current_node_sending();
-    std::cout << "[TEST] chan_state.is_current_node_sending == false" << std::endl;
-    assert(chan_state.get_is_current_node_sending() == false);
-    std::cout << "[TEST_PASSED]\n" << std::endl;
+    test_framework::test_assert(chan_state.get_is_current_node_sending(), false, "chan_state.is_current_node_sending == false");
 
 }

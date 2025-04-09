@@ -1,9 +1,14 @@
+#ifndef V_ROUTING 
+#define V_ROUTING
+
 #include <cstdint>
 #include <map>
 #include <vector>
 #include "Route.h"
 #include "../../utils/packet_header.h"
 #include "../addressing/Addressing.h"
+#include "../../utils/BlockingQueue.h"
+#include "../../utils/Message.h"
 
 #define BROADCAST_ADDR 0
 #define MAXIMUM_COST 4
@@ -20,7 +25,6 @@ namespace vector_routing_protocol {
         void register_echo(std::vector<char>);
         std::vector<char> build_custom_echo(uint32_t dest_node);
         std::map<unsigned char,Route *> get_routing_table();
-        unsigned char my_address = 0;
 
         std::map<unsigned char,Route *> myRoutingTable;
         std::map<unsigned char,bool> neighbors;
@@ -34,6 +38,8 @@ namespace vector_routing_protocol {
         void print_pkt_header(packet_header::Header pkt);
         packet_header::Header extract_header(std::vector<char> payload);
         void print_route(Route * r);
+        void predict_next_hop(packet_header::Header * h);
+        void start_thread(BlockingQueue< Message >* senderQueue);
 
 
     private:
@@ -41,6 +47,18 @@ namespace vector_routing_protocol {
 
         void init_internal_table();
 
+
+
+  
     };
 
+    static void * tick(void * arg);
+
+    struct thread_args {
+        BlockingQueue< Message >* senderQueue;
+        vector_routing_protocol::VectorRoutingProtocol* context;
+    };
+
+
 }
+#endif

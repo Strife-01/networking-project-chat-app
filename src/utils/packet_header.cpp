@@ -3,6 +3,8 @@
 //
 
 #include "packet_header.h"
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <vector>
 
@@ -39,6 +41,19 @@ std::vector<char> packet_header::build_header(const Header& h) {
 
     return ret;
 }
+
+
+uint32_t packet_header::bytes_vector_to_header_int(std::vector<char> packet){
+    return (packet[0] << 24) | (packet[1] << 16) | (packet[2] << 8) | packet[3];
+}
+
+std::vector<char> packet_header::add_header_to_payload(packet_header::Header h,std::vector<char> payload){
+    
+    std::vector<char> sr_header = packet_header::build_header(h);
+    payload.insert(payload.begin(),sr_header.begin(),sr_header.end());
+    return payload;
+}
+
 
 
 //typedef union {

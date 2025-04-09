@@ -8,16 +8,21 @@
     #define INFINITY_COST 5
 #endif
 
-
+#ifndef DYNADR
+#define DYNADR
 namespace dynamic_addressing {
+
+
+    unsigned char get_my_addr();
+    void set_my_addr(unsigned char);
+    
     class DynamicAddressing{
         public:
             DynamicAddressing();
-            unsigned char my_addr = 0;
             void gen_random_addr();
             void update_connected_nodes_list_from_RT(std::map<unsigned char,vector_routing_protocol::Route *> nodes);
             void register_addr_used_by_another_node(unsigned char addr);
-
+            unsigned char get_my_addr();
         private:
             std::map<unsigned char,bool> addr_in_use;
             void clear_nodes_addressing_map();
@@ -25,3 +30,4 @@ namespace dynamic_addressing {
     };
 
 }
+#endif
