@@ -26,6 +26,8 @@ namespace dynamic_addressing {
         private:
             std::map<unsigned char,bool> addr_in_use;
             void clear_nodes_addressing_map();
+
+            unsigned char my_addr;
         
     };
 

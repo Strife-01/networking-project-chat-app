@@ -70,8 +70,8 @@ namespace Message_Queue {
         return false;
     }
 
-    MessageQueue::Message MessageQueue::create_message(const std::string& message, const uint8_t sender_address, bool private_message, bool seen_message) {
-        return MessageQueue::Message{.message = message, .sender_address = sender_address, .private_message = private_message, .seen_message = seen_message};
+    MessageQueue::Message MessageQueue::create_message(const uint8_t sender, const std::string message, bool private_message, bool seen_message) {
+        return MessageQueue::Message{message, sender, private_message, seen_message};
     }
 
 } // Message_Queue

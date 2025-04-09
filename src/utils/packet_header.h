@@ -38,7 +38,6 @@ namespace packet_header {
     std::vector<char> build_header(const Header& h);
 
     uint32_t bytes_vector_to_header_int(std::vector<char> packet);
-    
     std::vector<char> add_header_to_payload(packet_header::Header h,std::vector<char> payload);
     std::vector<char> prepare_header_to_forward(std::vector<char> packet, std::map<unsigned char,vector_routing_protocol::Route *> table);
 }

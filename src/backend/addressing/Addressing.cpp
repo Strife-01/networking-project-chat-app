@@ -5,7 +5,14 @@
 #include "Addressing.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 using namespace std;
+
+
+/*
+
+
+*/
 
 
 namespace dynamic_addressing {
@@ -22,7 +29,7 @@ namespace dynamic_addressing {
         srandom(time(NULL));
 
         
-        unsigned char tmp_addr = get_my_addr();
+        /*unsigned char tmp_addr = get_my_addr();
         // 50% chance to change its addr, as two nodes are concerned
         if( (rand()%100 <= 50) || (tmp_addr == 0) ){
             do{
@@ -34,7 +41,9 @@ namespace dynamic_addressing {
             printf("Randomly selected address : %d\n",tmp_addr);
 
             set_my_addr(tmp_addr);
-        }
+        }*/
+
+        my_addr = getpid() % 5;
     }
 
     void DynamicAddressing::update_connected_nodes_list_from_RT(std::map<unsigned char,vector_routing_protocol::Route *> rt){
@@ -78,7 +87,7 @@ namespace dynamic_addressing {
 
 unsigned char dynamic_addressing::get_my_addr(){
 
-    FILE *f = fopen("my_addr.net","rb");
+    /*FILE *f = fopen("my_addr.net","rb");
     unsigned char addr = 0;
     if(f != NULL){
         size_t bytes_read = fread(&addr,sizeof(char),1,f);
@@ -90,9 +99,8 @@ unsigned char dynamic_addressing::get_my_addr(){
         fwrite(&buff,sizeof(char),1, f);
         fclose(f);
 
-    }
-
-    return addr;
+    }*/
+    return getpid() % 5;
 
 }
 

@@ -1,5 +1,6 @@
 #include "VectorRoutingProtocol.h"
 #include "Route.h"
+#include <bitset>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -40,7 +41,6 @@ namespace vector_routing_protocol {
         Header h = extract_header(payload);
 
         //printf("%d\n\n",h.fields.dst_addr);
-        // TODO: fix types
 
         uint8_t payload_len = h.payload_length;
         uint8_t src_node_addr = h.source_address;
@@ -100,11 +100,11 @@ namespace vector_routing_protocol {
         
         Header h = extract_header(payload);
 
-        print_pkt_header(h);
+        //print_pkt_header(h);
 
         uint32_t src_node_addr = h.source_address;
         std::map<unsigned char,Route *> recv_routing_table = process_payload(payload);
-        print_table(recv_routing_table);
+        //print_table(recv_routing_table);
 
 
 
@@ -133,7 +133,7 @@ namespace vector_routing_protocol {
 
 
         // check if the sender of the table is a new neighbour of us
-        if(this->neighbors.count(src_node_addr) <= 0){
+        if(myRoutingTable[src_node_addr]->cost == INFINITY_COST || src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
 
             printf("Got a new neighbor !! Discovered node %d\n",src_node_addr);
             puts("Checking if it does not share the same address as ours");
@@ -144,6 +144,8 @@ namespace vector_routing_protocol {
                 // if we kept the same address, let it stay at cost 0
                 if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr())
                     link_cost = 0;
+
+                
 
             }else{
                 puts("Okay ! no collision, registering this new neighbour :D");
@@ -156,6 +158,7 @@ namespace vector_routing_protocol {
 
             // insert newly discovered route in the table
             Route * r = (Route *) malloc(sizeof(Route *));
+            r->destination_node = src_node_addr;
             r->next_hop = src_node_addr;
             r->cost = potential_new_cost;
             r->TTL =MAX_TTL;
@@ -246,7 +249,8 @@ namespace vector_routing_protocol {
                 if(
                 (myRoutingTable.count(dest_node) > 0)
                 && 
-                (myRoutingTable[dest_node]->next_hop == src_node_addr)
+                (myRoutingTable[dest_node]->next_hop == src_node_addr) 
+                && (dest_node != dynamic_addressing::get_my_addr())
                 ){
                     // advertise this path as broken
                     printf("Broken link advertisment detected !!\n path to %d going throught %d\n",dest_node,src_node_addr);
@@ -305,11 +309,6 @@ namespace vector_routing_protocol {
 
         THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable);
         
-
-        printf("Transmitting data table to new nodes !\n");
-
-
-    
         
     }
 
@@ -378,26 +377,38 @@ namespace vector_routing_protocol {
         h.more_fragments = false;
         h.type = packet_header::echo;
 
-        print_pkt_header(h);
-
         std::vector<char> payload = serialize_table(tmp_routing_table);
 
-        std::cout << "std::vector<char> payload = {\n";
+        /*std::cout << "std::vector<char> payload = {\n";
         for (size_t i = 0; i < payload.size(); ++i) {
             if (payload[i] == INFINITY_COST) {
                 std::cout << "    INFINITY_COST";
             } else {
-                std::cout << "    0x" << std::hex << std::setw(2) << std::setfill('0')
-                          << static_cast<int>(payload[i]);
+                std::cout << "    0x" << std::hex << static_cast<int>(payload[i]);
             }
             if (i < payload.size() - 1) {
                 std::cout << ",";
             }
             std::cout << "\n";
         }
-        std::cout << "};\n";
+        std::cout << "};\n";*/
 
         std::vector<char> serialized_header = packet_header::build_header(h);
+        /*for(int i=0;i<serialized_header.size();i++){
+            std::bitset<8> y(serialized_header[i]);
+            std::cout<<y<<std::endl;
+        }*/
+
+        // THE FUCK UP ZONE HAPPENS HERE
+        std::bitset<32> x(packet_header::bytes_vector_to_header_int(serialized_header));
+        //std::cout<<"HEADER BITS : "<<x<<std::endl;
+        // END OF ZONE (on voit les bits a 1 partout en début => les fameux 7)
+        // NORMALEMENT C FIX MTN, A VOIR PLUS AMPLEMENT
+
+        //print_pkt_header(extract_header(serialized_header));
+
+
+
         payload.insert(
             payload.begin(),
             serialized_header.begin(),
@@ -406,7 +417,7 @@ namespace vector_routing_protocol {
 
         //std::vector<char> pkt = packet_header::add_header_to_payload(h, serialize_table(tmp_routing_table));
 
-        print_pkt_header(extract_header(payload));
+        //print_pkt_header(extract_header(payload));
 
         return payload;
     }
@@ -480,7 +491,7 @@ namespace vector_routing_protocol {
                 r->cost = 0;
             }
 
-
+            
             r->next_hop = 0;
             r->TTL = MAX_TTL;
             myRoutingTable[i] = r;
@@ -552,3 +563,9 @@ namespace vector_routing_protocol {
 
 
     
+
+
+/*
+
+PB POUR POISON REVERSE : COMMENT REPONDRE A UN NODE
+*/
