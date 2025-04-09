@@ -1,4 +1,7 @@
 #include "VectorRoutingProtocol.h"
+#include "Route.h"
+#include <bitset>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -6,15 +9,20 @@
 #include <stdio.h>
 #include <cstdio>
 #include <vector>
+#include <iomanip>
 
 
 namespace vector_routing_protocol {
+    using namespace packet_header;
 
     VectorRoutingProtocol::VectorRoutingProtocol() {
 
         // first a foremost, to route something we need our own address :)
         THE_ADDRESSOR_20000 = dynamic_addressing::DynamicAddressing();
         THE_ADDRESSOR_20000.gen_random_addr();
+
+        // init routing table
+        init_internal_table();
     }
 
 
@@ -23,40 +31,45 @@ namespace vector_routing_protocol {
     }
 
 
-    std::map<uint32_t,Route *> VectorRoutingProtocol::process_payload(char * payload){
-
-        packet_header h;
-        h.header = ((unsigned int*) payload)[0];
-
-        uint32_t payload_len = h.fields.payload_len;
-        uint32_t src_node_addr = h.fields.src_addr;
-        char * serialized_table = (char *) ( ((unsigned int*) payload)+1 );
+    std::map<unsigned char,Route *> VectorRoutingProtocol::process_payload(std::vector<char> payload){
 
 
-        std::map<uint32_t,Route *> table;
+        Header h = extract_header(payload);
+
+        //printf("%d\n\n",h.fields.dst_addr);
+        // TODO: fix types
+
+        uint8_t payload_len = h.payload_length;
+        uint8_t src_node_addr = h.source_address;
+        std::vector<char> serialized_table(payload.begin()+4,payload.end());
+        
+
+        std::map<unsigned char,Route *> table;
         
         // loop through the table
 
         for(int i = 0;i<payload_len;i = i+2){
 
             Route * r = (Route *) malloc(sizeof(Route));
-
+            
             r->next_hop = src_node_addr;
-            r->destination_node = ((uint32_t *) serialized_table)[i];
-            r->cost = ((uint32_t *) serialized_table)[i+1];
-            table[((uint32_t *) serialized_table)[i]] = r;
+            r->destination_node = serialized_table[i];
+            r->cost = serialized_table[i+1];
+            table[serialized_table[i]] = r;
         }
+
+        printf("table size %zu\n",table.size());
 
 
         return table;
 
     }
 
-    std::vector<char> VectorRoutingProtocol::serialize_table(std::map<uint32_t,Route*> table){
+    std::vector<char> VectorRoutingProtocol::serialize_table(std::map<unsigned char,Route*> table){
 
         std::vector<char> payload;
 
-        for(int i =0;i<table.size();i++){
+        for(int i =1;i<=table.size();i++){
 
             payload.push_back(table[i]->destination_node);
             payload.push_back(table[i]->cost);
@@ -79,17 +92,18 @@ namespace vector_routing_protocol {
 
 
 
-    void VectorRoutingProtocol::register_echo(std::vector<char> shitty_format_payload) {
+    void VectorRoutingProtocol::register_echo(std::vector<char> payload) {
  
-
-        char * payload = shitty_format_payload.data();
         
-        packet_header h;
-        h.header = ((unsigned int * ) payload)[0];
+        Header h = extract_header(payload);
 
-        uint32_t src_node_addr = h.fields.src_addr;
-        std::map<uint32_t,Route *> recv_routing_table = process_payload(payload);
-        
+        print_pkt_header(h);
+
+        uint32_t src_node_addr = h.source_address;
+        std::map<unsigned char,Route *> recv_routing_table = process_payload(payload);
+        print_table(recv_routing_table);
+
+
 
         // myself
         if(myRoutingTable.count(THE_ADDRESSOR_20000.my_addr) <= 0){
@@ -110,124 +124,141 @@ namespace vector_routing_protocol {
         }
 
 
-        std::cout<< "received echo from " << src_node_addr << " with "
-        << recv_routing_table.size() << " rows"<<std::endl;
+        printf("received echo from %d\n",src_node_addr);
 
-        uint32_t link_cost = calculate_link_cost_from_rtt(1);
-
-        for (int i = 0; i < recv_routing_table.size(); i++) {
-
-             // we will use the node address as node index in the table
-            if(this->neighbors.count(src_node_addr) <= 0){
-
-                printf("Got a new neighbor !! Discovered node %d\n",src_node_addr);
-                printf("Checking if it does not share the same address as ours\n");
-
-                if(src_node_addr == THE_ADDRESSOR_20000.my_addr){
-                    printf("Oh NOOO ! Address collision. Starting recovery process...");
-                    
-                    THE_ADDRESSOR_20000.gen_random_addr();
-                }else{
-                    // still, new node means we have to register it
-                    THE_ADDRESSOR_20000.register_addr_used_by_another_node(src_node_addr);
-                }
+        unsigned char link_cost = calculate_link_cost_from_rtt(1);
 
 
-                unsigned int potential_new_cost = link_cost;
-                // insert newly discovered route in the table
-                Route * r = (Route *) malloc(sizeof(Route *));
-                r->next_hop = src_node_addr;
-                r->cost = potential_new_cost;
-                r->TTL =MAX_TTL;
-                myRoutingTable[src_node_addr]=r;                
+        // check if the sender of the table is a new neighbour of us
+        if(this->neighbors.count(src_node_addr) <= 0){
+
+            printf("Got a new neighbor !! Discovered node %d\n",src_node_addr);
+            puts("Checking if it does not share the same address as ours");
+
+            if(src_node_addr == THE_ADDRESSOR_20000.my_addr){
+                puts("Oh NOOO ! Address collision. Starting recovery process...");
+                
+                THE_ADDRESSOR_20000.gen_random_addr();
+            }else{
+                puts("Okay ! no collision, registering this new neighbour :D");
+                // still, new node means we have to register it
+                THE_ADDRESSOR_20000.register_addr_used_by_another_node(src_node_addr);
             }
-            neighbors[src_node_addr] = true;
+
+            unsigned char potential_new_cost = link_cost;
+
+
+            // insert newly discovered route in the table
+            Route * r = (Route *) malloc(sizeof(Route *));
+            r->next_hop = src_node_addr;
+            r->cost = potential_new_cost;
+            r->TTL =MAX_TTL;
+            myRoutingTable[src_node_addr]=r; 
 
             
-            
+        }
+        neighbors[src_node_addr] = true;
            
 
-            for(int32_t i =1;i<=this->nodes_count;i++){
+        // loop throught the table
+        for(unsigned char i =1;i<=MAX_NODE_NUMBER;i++){
 
 
-                // checking whether some destination is already in myRoutingTable, and accessing it:
-                int32_t dest_node = i;
-                
 
-                if(recv_routing_table[dest_node]->cost != INFINITY_COST){
+            // checking whether some destination is already in myRoutingTable, and accessing it:
+            unsigned char dest_node = i;
+            
+            if(recv_routing_table[dest_node]->cost != INFINITY_COST){
 
-                    unsigned int potential_new_cost =recv_routing_table[dest_node]->cost+link_cost;
+                unsigned char potential_new_cost =recv_routing_table[dest_node]->cost+link_cost;
 
-                    // barrier against infinite incrementation
-                    if(!(potential_new_cost > MAXIMUM_COST)){
-                        // already a route for it ?
-                        if (myRoutingTable.count(dest_node)) {
-                            //printf("Already found an entry for node %d in table\n",dest_node);
-                            // now access the Route as   myRoutingTable[somedest_node]
-                            if(
-                                (myRoutingTable[dest_node]->cost > potential_new_cost)
-                                ||
-                                (myRoutingTable[dest_node]->cost == INFINITY_COST)
-                                ||
-                                (myRoutingTable[dest_node]->TTL <= 0)
-                            ){
-                                printf("Node %d is proposing a better cost to reach %d. ( %d vs %d )\n",
-                                    src_node_addr,
-                                    dest_node,
-                                    potential_new_cost,
-                                    myRoutingTable[dest_node]->cost
-                                );
-                                
-                                myRoutingTable[dest_node]->cost = potential_new_cost;
-                                myRoutingTable[dest_node]->next_hop = src_node_addr;
-                                myRoutingTable[dest_node]->TTL =MAX_TTL;
-                            }
-
+                // barrier against infinite incrementation
+                if(!(potential_new_cost > MAXIMUM_COST)){
+                    // already a route for it ?
+                    if (myRoutingTable.count(dest_node)) {
+                        printf("Already found an entry for node %d in table\n",dest_node);
+                        // now access the Route as   myRoutingTable[somedest_node]
+                        if(
+                            (myRoutingTable[dest_node]->cost > potential_new_cost)
+                            ||
+                            (myRoutingTable[dest_node]->cost == INFINITY_COST)
+                            ||
+                            (myRoutingTable[dest_node]->TTL <= 0)
+                        ){
+                            printf("Node %d is proposing a better cost to reach %d. ( %d vs %d )\n",
+                                src_node_addr,
+                                dest_node,
+                                potential_new_cost,
+                                myRoutingTable[dest_node]->cost
+                            );
+                            
+                            myRoutingTable[dest_node]->cost = potential_new_cost;
+                            myRoutingTable[dest_node]->next_hop = src_node_addr;
+                            myRoutingTable[dest_node]->TTL =MAX_TTL;
                         }else{
 
-                            if(i != THE_ADDRESSOR_20000.my_addr){
-                                printf("Got a new route !! Discovered node %d\n",dest_node);
-                                // insert newly discovered route in the table
-                                Route * r = (Route *) malloc(sizeof(Route *));
-                                r->next_hop = src_node_addr;
-                                r->cost = potential_new_cost;
-                                r->TTL =MAX_TTL;
-                                myRoutingTable[dest_node]=r;
+                            printf("Incoming table did not propose a better path to node %d\n",dest_node);
+                            // last if do not check the case of non changing cost
+                            // but in that case, we don't want a new route,
+                            // just to reset TTL
+                            if(myRoutingTable[dest_node]->cost == potential_new_cost){
+                                myRoutingTable[dest_node]->TTL = MAX_TTL;
                             }
 
-
                         }
+
                     }else{
-                        //myRoutingTable[dest_node].cost = INFINITY_COST;
-                    }
 
-                    
+
+
+
+                        if(dest_node != THE_ADDRESSOR_20000.my_addr){
+                            printf("Got a new route !! Discovered node %d\n",dest_node);
+                            // insert newly discovered route in the table
+                            Route * r = (Route *) malloc(sizeof(Route *));
+                            r->next_hop = src_node_addr;
+                            r->cost = potential_new_cost;
+                            r->TTL =MAX_TTL;
+                            myRoutingTable[dest_node]=r;
+                        }
+                        
+                        
+
+
+                    }
                 }else{
-
-                    // remove if we get infinity from a node that was previously our next hop
-                    printf("Got infinity cost to node %d from %d\n",dest_node,src_node_addr);
-
-
-                    if(
-                    (myRoutingTable.count(dest_node) > 0)
-                    && 
-                    (myRoutingTable[dest_node]->next_hop == src_node_addr)
-                    ){
-                        // advertise this path as broken
-                        printf("Broken link advertisment detected !!\n path to %d going throught %d\n",dest_node,src_node_addr);
-                        myRoutingTable[dest_node]->cost = INFINITY_COST;
-                    }
-
+                    //myRoutingTable[dest_node].cost = INFINITY_COST;
                 }
-                
-                
-            }
 
+                
+            }else{
+
+                // remove if we get infinity from a node that was previously our next hop
+                printf("Got infinity cost to node %d from %d\n",dest_node,src_node_addr);
+
+
+                if(
+                (myRoutingTable.count(dest_node) > 0)
+                && 
+                (myRoutingTable[dest_node]->next_hop == src_node_addr)
+                ){
+                    // advertise this path as broken
+                    printf("Broken link advertisment detected !!\n path to %d going throught %d\n",dest_node,src_node_addr);
+                    myRoutingTable[dest_node]->cost = INFINITY_COST;
+                }
+
+            }
+            
+            
         }
+
+        
 
 
         // check inactive neighboors ( that did not send a packet)
         for(int i = 1;i<=MAX_NODE_NUMBER;i++){
+
+
             if((neighbors.count(i) > 0 ) ){
 
                 if(neighbors[i] == false){
@@ -281,7 +312,7 @@ namespace vector_routing_protocol {
     // resetting do not update table
     std::vector<char> VectorRoutingProtocol::build_custom_echo(uint32_t dest_node){
 
-        std::map<uint32_t,Route*> tmp_routing_table;
+        std::map<unsigned char,Route*> tmp_routing_table;
 
         // split horizon poison reverse
         for(int i=1;i<=MAX_NODE_NUMBER;i++){
@@ -337,6 +368,78 @@ namespace vector_routing_protocol {
 
     std::map<unsigned char,Route *> VectorRoutingProtocol::get_routing_table(){
         return myRoutingTable;
+    }
+
+
+    void VectorRoutingProtocol::print_interntal_table(){
+        print_table(myRoutingTable);
+    }
+
+    void VectorRoutingProtocol::print_table(std::map<unsigned char,Route *> table){
+        
+        puts("| NODE | COST | NXTHOP |");
+        puts("========================");
+        for(int i=1;i<=table.size();i++){
+            if(table.count(i)){
+                printf("|  %d   |  %d   |  %d     |\n",
+                    table[i]->destination_node,
+                    table[i]->cost,
+                    table[i]->next_hop
+                );
+            }
+
+        }
+        puts("========================");
+    }
+
+    void VectorRoutingProtocol::print_pkt_header(Header pkt){
+        std::cout << "Packet Header Content:\n";
+        std::cout << "----------------------\n";
+        std::cout << std::setw(20) << std::left << "Payload Length:" << static_cast<int>(pkt.payload_length) << "\n";
+        std::cout << std::setw(20) << std::left << "Type:" << static_cast<int>(pkt.type) << "\n";
+        std::cout << std::setw(20) << std::left << "Fragment ID:" << pkt.fragment_id << "\n";
+        std::cout << std::setw(20) << std::left << "Message ID:" << static_cast<int>(pkt.message_id) << "\n";
+        std::cout << std::setw(20) << std::left << "More Fragments (MF):" << std::boolalpha << pkt.more_fragments << "\n";
+        std::cout << std::setw(20) << std::left << "Destination Address:" << static_cast<int>(pkt.dest_address) << "\n";
+        std::cout << std::setw(20) << std::left << "Next Hop:" << static_cast<int>(pkt.next_hop_address) << "\n";
+        std::cout << std::setw(20) << std::left << "Source Address:" << static_cast<int>(pkt.source_address) << "\n";
+        std::cout << "----------------------\n";
+    }
+
+    Header VectorRoutingProtocol::extract_header(std::vector<char> payload){
+        uint32_t header = (payload[0] << 24) | (payload[1] << 16) | (payload[2] << 8) | payload[3];
+        Header h = get_separated_header(header);
+        return h;
+    }
+
+    void VectorRoutingProtocol::print_route(Route * r){
+        printf("destination : %d | next_hop : %d | cost %d | TTL %d\n",
+            r->destination_node,
+            r->next_hop,
+            r->cost,
+            r->TTL
+        );
+    }
+
+    void VectorRoutingProtocol::init_internal_table(){
+
+        for(int i =1;i<=MAX_NODE_NUMBER;i++){
+            Route * r = (Route *) malloc(sizeof(Route));
+            r->destination_node = i;
+
+
+            if(THE_ADDRESSOR_20000.my_addr != i){
+                r->cost = INFINITY_COST;
+            }else{
+                r->cost = 0;
+            }
+
+
+            r->next_hop = 0;
+            r->TTL = MAX_TTL;
+            myRoutingTable[i] = r;
+        }
+
     }
     
 }

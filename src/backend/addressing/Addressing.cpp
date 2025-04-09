@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <time.h>
 #include "Addressing.h"
+#include <stdio.h>
 using namespace std;
 
 
@@ -9,7 +10,9 @@ namespace dynamic_addressing {
 
 
     DynamicAddressing::DynamicAddressing(){
-        
+        for(int i =1;i<=MAX_NODE_NUMBER;i++){
+            this->addr_in_use[i] = false;
+        }
     }
 
 
@@ -18,12 +21,13 @@ namespace dynamic_addressing {
         
         // 50% chance to change its addr, as two nodes are concerned
         if( (rand()%100 <= 50) || (this->my_addr == 0) ){
-            this->my_addr = rand() % MAX_NODE_NUMBER;
+            this->my_addr = rand() % MAX_NODE_NUMBER+1;
             do{
-                this->my_addr = rand() % MAX_NODE_NUMBER;
+                this->my_addr = rand() % MAX_NODE_NUMBER+1;
 
-            }while(this->addr_in_use[this->my_addr]);
+            }while(this->addr_in_use[this->my_addr] || this->my_addr == 0);
             
+            printf("Randomly selected address : %d\n",this->my_addr);
         }
     }
 
@@ -52,7 +56,7 @@ namespace dynamic_addressing {
     }
 
     void DynamicAddressing::clear_nodes_addressing_map(){
-        for(int i=0;i<=MAX_NODE_NUMBER;i++){
+        for(int i=1;i<=MAX_NODE_NUMBER;i++){
             this->addr_in_use[i] = false;
         }
     }

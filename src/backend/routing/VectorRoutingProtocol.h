@@ -22,17 +22,25 @@ namespace vector_routing_protocol {
         std::map<unsigned char,Route *> get_routing_table();
         unsigned char my_address = 0;
 
-    private:
-        unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
-
         std::map<unsigned char,Route *> myRoutingTable;
         std::map<unsigned char,bool> neighbors;
 
-        std::vector<char> serialize_table(std::map<uint32_t,Route *>);
+        std::vector<char> serialize_table(std::map<unsigned char,Route *>);
         uint32_t calculate_link_cost_from_rtt(const int RTT);
-        std::map<uint32_t,Route *> process_payload(char * payload);
-
+        std::map<unsigned char,Route *> process_payload(std::vector<char> payload);
         dynamic_addressing::DynamicAddressing THE_ADDRESSOR_20000;
+        void print_table(std::map<unsigned char,Route *>);
+        void print_interntal_table();
+        void print_pkt_header(packet_header::Header pkt);
+        packet_header::Header extract_header(std::vector<char> payload);
+        void print_route(Route * r);
+
+
+    private:
+        unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
+
+        void init_internal_table();
+
     };
 
 }

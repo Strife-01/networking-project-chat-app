@@ -4,13 +4,19 @@
 
 #ifndef MESSAGEQUEUE_H
 #define MESSAGEQUEUE_H
+#include <cstdint>
+#include <string>
 
 namespace Message_Queue {
 
 class MessageQueue {
-    class Message {
-
-    }
+public:
+    MessageQueue();
+private:
+    typedef struct {
+        std::string message;
+        uint8_t message_address;
+    } Message;
 };
 
 } // Message_Queue
