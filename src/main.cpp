@@ -41,6 +41,7 @@ int main() {
 
 	client.startThread();
 
+
 	vector_routing_protocol::VectorRoutingProtocol v_r_proto;
 
 	v_r_proto.start_thread(&senderQueue);
@@ -71,7 +72,7 @@ int main() {
 			);
 
 			if(h.type == packet_header::echo){
-				v_r_proto.register_echo(temp.data);
+				//v_r_proto.register_echo(temp.data);
 			}
 
 			break;

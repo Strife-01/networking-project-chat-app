@@ -22,7 +22,7 @@ namespace vector_routing_protocol {
         // first a foremost, to route something we need our own address :)
         THE_ADDRESSOR_20000 = dynamic_addressing::DynamicAddressing();
         THE_ADDRESSOR_20000.gen_random_addr();
-
+        puts("after");
         // init routing table
         init_internal_table();
     }

@@ -20,6 +20,7 @@ namespace dynamic_addressing {
 
     void DynamicAddressing::gen_random_addr(){
         srandom(time(NULL));
+
         
         unsigned char tmp_addr = get_my_addr();
         // 50% chance to change its addr, as two nodes are concerned
@@ -81,8 +82,15 @@ unsigned char dynamic_addressing::get_my_addr(){
     unsigned char addr = 0;
     if(f != NULL){
         size_t bytes_read = fread(&addr,sizeof(char),1,f);
+        fclose(f);
+    }else{
+        // create the file and put a bogus 0 value into it
+        f = fopen("my_addr.net","ab+");
+        unsigned char buff = 0;
+        fwrite(&buff,sizeof(char),1, f);
+        fclose(f);
+
     }
-    fclose(f);
 
     return addr;
 
