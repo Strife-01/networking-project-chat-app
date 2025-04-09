@@ -35,7 +35,7 @@ namespace Message_Queue {
         }
     }
 
-    const std::vector<MessageQueue::Message> MessageQueue::get_messages() {
+    const std::vector<MessageQueue::Message>& MessageQueue::get_messages() {
         std::lock_guard<std::mutex> lock(mutex);
         auto it = messageQueue.find(0);
         if (it == messageQueue.end()) {
@@ -44,7 +44,7 @@ namespace Message_Queue {
         return it->second;
     }
 
-    const std::vector<MessageQueue::Message> MessageQueue::get_messages(const uint8_t sender) {
+    const std::vector<MessageQueue::Message>& MessageQueue::get_messages(const uint8_t sender) {
         std::lock_guard<std::mutex> lock(mutex);
         auto it = messageQueue.find(sender);
         if (it == messageQueue.end()) {
@@ -52,18 +52,18 @@ namespace Message_Queue {
         }
         return it->second;
     }
-
     bool MessageQueue::has_unseen_messages(const uint8_t sender) {
         std::lock_guard<std::mutex> lock(mutex);
         auto it = messageQueue.find(sender);
-        if (it != messageQueue.end()) {
-            for (const auto& message : it->second) {
-                if (!message.seen_message) {
-                    return true;
-                }
-            }
+        if (it != messageQueue.end() && !it->second.empty()) {
+            const auto& lastMessage = it->second.back();
+            return !lastMessage.seen_message;
         }
         return false;
+    }
+
+    MessageQueue::Message MessageQueue::create_message(const uint8_t sender, const std::string& message, bool private_message, bool seen_message) {
+        return MessageQueue::Message{message, sender, private_message, seen_message};
     }
 
 } // Message_Queue
