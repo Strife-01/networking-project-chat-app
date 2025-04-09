@@ -462,6 +462,7 @@ namespace vector_routing_protocol {
     static void * tick(void * args) {
         struct thread_args * ta = (struct thread_args *) args;
     
+        puts("[+] TICK -> sending new echo to all neighbours.");
         for(int i = 1;i<=MAX_NODE_NUMBER;i++){
             if(ta->context->neighbors[i]){
                 std::vector<char> packet = ta->context->build_custom_echo(i);
@@ -484,7 +485,7 @@ namespace vector_routing_protocol {
         args->context = this;
         args->senderQueue = senderQueue;
     
-        pthread_create(&ticking_thread_id, NULL, VectorRoutingProtocol::tick, args);
+        pthread_create(&ticking_thread_id, NULL, vector_routing_protocol::tick, args);
     }
 
  

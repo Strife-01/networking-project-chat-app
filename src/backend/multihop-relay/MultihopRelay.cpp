@@ -1,11 +1,13 @@
 #include "MultihopRelay.h"
 #include "../addressing/Addressing.h"
+#include "../../utils/packet_header.h"
 #include <vector>
+
 
 namespace multihop_relay {
 
     
-    void MultihopRelay(){
+    MultihopRelay::MultihopRelay(){
         
     }
 

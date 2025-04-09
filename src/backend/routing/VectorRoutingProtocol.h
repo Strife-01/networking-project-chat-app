@@ -48,10 +48,11 @@ namespace vector_routing_protocol {
         void init_internal_table();
 
 
-        static void * tick(void * arg);
 
   
     };
+
+    static void * tick(void * arg);
 
     struct thread_args {
         BlockingQueue< Message >* senderQueue;
