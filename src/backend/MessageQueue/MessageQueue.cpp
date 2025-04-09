@@ -3,6 +3,7 @@
 //
 
 #include "MessageQueue.h"
+#include <iostream>
 
 namespace Message_Queue {
     MessageQueue::MessageQueue() {
@@ -29,13 +30,13 @@ namespace Message_Queue {
         if (it != messageQueue.end()) {
             it->second.push_back(message);
         } else {
-            std::vector<Message> broadcasts = std::vector<Message>();
+            std::vector<Message> broadcasts;
             broadcasts.push_back(message);
             messageQueue.insert_or_assign(sender_address, broadcasts);
         }
     }
 
-    const std::vector<MessageQueue::Message>& MessageQueue::get_messages() {
+    const std::vector<MessageQueue::Message> MessageQueue::get_messages() {
         std::lock_guard<std::mutex> lock(mutex);
         auto it = messageQueue.find(0);
         if (it == messageQueue.end()) {
@@ -44,14 +45,21 @@ namespace Message_Queue {
         return it->second;
     }
 
-    const std::vector<MessageQueue::Message>& MessageQueue::get_messages(const uint8_t sender) {
+    const std::vector<MessageQueue::Message> MessageQueue::get_messages(const uint8_t sender) {
         std::lock_guard<std::mutex> lock(mutex);
         auto it = messageQueue.find(sender);
         if (it == messageQueue.end()) {
             return std::vector<Message>();
         }
+        // Turn messages to seen
+        for (auto& message : it->second) {
+            if (!message.seen_message) {
+                message.seen_message = true;
+            }
+        }
         return it->second;
     }
+
     bool MessageQueue::has_unseen_messages(const uint8_t sender) {
         std::lock_guard<std::mutex> lock(mutex);
         auto it = messageQueue.find(sender);
@@ -62,8 +70,8 @@ namespace Message_Queue {
         return false;
     }
 
-    MessageQueue::Message MessageQueue::create_message(const uint8_t sender, const std::string& message, bool private_message, bool seen_message) {
-        return MessageQueue::Message{message, sender, private_message, seen_message};
+    MessageQueue::Message MessageQueue::create_message(const std::string& message, const uint8_t sender_address, bool private_message, bool seen_message) {
+        return MessageQueue::Message{.message = message, .sender_address = sender_address, .private_message = private_message, .seen_message = seen_message};
     }
 
 } // Message_Queue
