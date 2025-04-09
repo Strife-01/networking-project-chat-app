@@ -67,12 +67,17 @@ int main() {
 
 			// ECHO REQUEST HANDLING
 
+			
 			h = packet_header::get_separated_header(
 				packet_header::bytes_vector_to_header_int(temp.data)
 			);
+			
+			puts("RECEIVED HEADER");
+			
+			v_r_proto.print_pkt_header(h);
 
 			if(h.type == packet_header::echo){
-				//v_r_proto.register_echo(temp.data);
+				v_r_proto.register_echo(temp.data);
 			}
 
 			break;

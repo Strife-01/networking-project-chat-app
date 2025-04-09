@@ -12,6 +12,7 @@
 #include <vector>
 #include <iomanip>
 #include <thread>
+#include "../channel_state/ChannelState.h"
 
 
 namespace vector_routing_protocol {
@@ -369,13 +370,45 @@ namespace vector_routing_protocol {
         packet_header::Header h;
         h.dest_address = dest_node;
         h.next_hop_address = dest_node;
+        //printf("Getting my address : %d\n",dynamic_addressing::get_my_addr());
         h.source_address = dynamic_addressing::get_my_addr();
         h.message_id = 1;
         h.fragment_id = 0;
         h.payload_length = 8;
-        h.type = packet_header::types(echo);
-        return packet_header::add_header_to_payload(h, serialize_table(tmp_routing_table));
+        h.more_fragments = false;
+        h.type = packet_header::echo;
 
+        print_pkt_header(h);
+
+        std::vector<char> payload = serialize_table(tmp_routing_table);
+
+        std::cout << "std::vector<char> payload = {\n";
+        for (size_t i = 0; i < payload.size(); ++i) {
+            if (payload[i] == INFINITY_COST) {
+                std::cout << "    INFINITY_COST";
+            } else {
+                std::cout << "    0x" << std::hex << std::setw(2) << std::setfill('0')
+                          << static_cast<int>(payload[i]);
+            }
+            if (i < payload.size() - 1) {
+                std::cout << ",";
+            }
+            std::cout << "\n";
+        }
+        std::cout << "};\n";
+
+        std::vector<char> serialized_header = packet_header::build_header(h);
+        payload.insert(
+            payload.begin(),
+            serialized_header.begin(),
+            serialized_header.end()
+        );
+
+        //std::vector<char> pkt = packet_header::add_header_to_payload(h, serialize_table(tmp_routing_table));
+
+        print_pkt_header(extract_header(payload));
+
+        return payload;
     }
 
 
@@ -460,20 +493,43 @@ namespace vector_routing_protocol {
     }
 
     static void * tick(void * args) {
+
         struct thread_args * ta = (struct thread_args *) args;
-    
-        puts("[+] TICK -> sending new echo to all neighbours.");
-        for(int i = 1;i<=MAX_NODE_NUMBER;i++){
-            if(ta->context->neighbors[i]){
-                std::vector<char> packet = ta->context->build_custom_echo(i);
-                Message sendMessage = Message(DATA, packet);
-                ta->senderQueue->push(sendMessage); // if this is what you want
+
+        bool first_run = true;
+
+        while(true){
+
+
+            puts("[+] TICK -> sending new echo to all neighbours.");
+            ta->context->print_interntal_table();
+            for(int i = 1;i<=MAX_NODE_NUMBER;i++){
+                
+
+                if(ta->context->neighbors[i] || first_run){
+                    std::vector<char> packet = ta->context->build_custom_echo(i);
+                    if(!Channel_State::chan_state.get_is_line_busy()
+                        || (Channel_State::chan_state.get_is_line_busy() 
+                                && Channel_State::chan_state.get_is_current_node_sending())
+                    ){
+                        Message sendMessage = Message(DATA, packet);
+                        ta->senderQueue->push(sendMessage); // if this is what you want
+                        puts("SENT !");
+                    }
+
+                    first_run = false;
+                }
+
+
+                
+            
             }
+    
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         
         }
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
     
+
         free(ta); // Clean up memory if you're done
         return NULL;
     }
