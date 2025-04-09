@@ -1,3 +1,6 @@
+#ifndef V_ROUTING 
+#define V_ROUTING
+
 #include <cstdint>
 #include <map>
 #include <vector>
@@ -20,7 +23,6 @@ namespace vector_routing_protocol {
         void register_echo(std::vector<char>);
         std::vector<char> build_custom_echo(uint32_t dest_node);
         std::map<unsigned char,Route *> get_routing_table();
-        unsigned char my_address = 0;
 
         std::map<unsigned char,Route *> myRoutingTable;
         std::map<unsigned char,bool> neighbors;
@@ -34,6 +36,7 @@ namespace vector_routing_protocol {
         void print_pkt_header(packet_header::Header pkt);
         packet_header::Header extract_header(std::vector<char> payload);
         void print_route(Route * r);
+        void predict_next_hop(packet_header::Header * h);
 
 
     private:
@@ -44,3 +47,4 @@ namespace vector_routing_protocol {
     };
 
 }
+#endif

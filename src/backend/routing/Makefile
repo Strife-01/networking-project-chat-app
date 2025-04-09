@@ -2,7 +2,7 @@
 CXX = g++
 
 # Compiler flags
-CXXFLAGS = -std=c++11
+CXXFLAGS = -std=c++17
 
 # Target executable
 TARGET = test

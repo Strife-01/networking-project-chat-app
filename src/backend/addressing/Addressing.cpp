@@ -1,8 +1,10 @@
 #include <cmath>
+#include <cstddef>
 #include <cstdlib>
 #include <time.h>
 #include "Addressing.h"
 #include <stdio.h>
+#include <stdlib.h>
 using namespace std;
 
 
@@ -19,15 +21,18 @@ namespace dynamic_addressing {
     void DynamicAddressing::gen_random_addr(){
         srandom(time(NULL));
         
+        unsigned char tmp_addr = get_my_addr();
         // 50% chance to change its addr, as two nodes are concerned
-        if( (rand()%100 <= 50) || (this->my_addr == 0) ){
-            this->my_addr = rand() % MAX_NODE_NUMBER+1;
+        if( (rand()%100 <= 50) || (tmp_addr == 0) ){
             do{
-                this->my_addr = rand() % MAX_NODE_NUMBER+1;
 
-            }while(this->addr_in_use[this->my_addr] || this->my_addr == 0);
+                tmp_addr = rand() % MAX_NODE_NUMBER+1;
+
+            }while(this->addr_in_use[tmp_addr] || tmp_addr == 0);
             
-            printf("Randomly selected address : %d\n",this->my_addr);
+            printf("Randomly selected address : %d\n",tmp_addr);
+
+            set_my_addr(tmp_addr);
         }
     }
 
@@ -61,6 +66,33 @@ namespace dynamic_addressing {
         }
     }
 
+    unsigned char DynamicAddressing::get_my_addr(){
+        return dynamic_addressing::get_my_addr();
+    }
+
+
 }
 
 
+
+unsigned char dynamic_addressing::get_my_addr(){
+
+    FILE *f = fopen("my_addr.net","rb");
+    unsigned char addr = 0;
+    if(f != NULL){
+        size_t bytes_read = fread(&addr,sizeof(char),1,f);
+    }
+    fclose(f);
+
+    return addr;
+
+}
+
+void dynamic_addressing::set_my_addr(unsigned char addr){
+    FILE *f = fopen("my_addr.net","wb");
+
+    if(f != NULL){
+        fwrite(&addr, sizeof(char), 1, f);
+    }
+    fclose(f);
+}

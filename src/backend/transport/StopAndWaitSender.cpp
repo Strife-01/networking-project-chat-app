@@ -4,24 +4,27 @@
 #include <thread>
 #include <iostream>
 
-void send_packet(const packet_header& header, const std::vector<char>& payload) {
+void send_packet(const packet_header::Header& header, const std::vector<char>& payload) {
     // add send from the framework
-    std::cout << "[SEND] Fragment " << header.fields.fragment_id << " of msg " << (int) header.fields.msg_id << ", payload: " << std::string(payload.begin(), payload.end()) << "\n";
+    std::cout << "[SEND] Fragment " << header.fragment_id << " of msg " << (int) header.message_id << ", payload: " << std::string(payload.begin(), payload.end()) << "\n";
 }
 
 StopAndWaitSender::StopAndWaitSender() : ackReceived( false ), current_msg_id(0), current_fragment_id(0) {}
 
-void StopAndWaitSender::sendFragments(const std::vector<std::pair<packet_header, std::vector<char>>>& fragments) {
+void StopAndWaitSender::sendFragments(
+    const std::vector<std::pair<packet_header::Header,
+    std::vector<char>>>& fragments
+) {
     for (const auto& [header, payload] : fragments) {
-        current_msg_id = header.fields.msg_id;
-        current_fragment_id = header.fields.fragment_id;
+        current_msg_id = header.message_id;
+        current_fragment_id = header.fragment_id;
 
         ackReceived = false;
         sendWithRetry(header, payload);
     }
 }
 
-void StopAndWaitSender::sendWithRetry(const packet_header& header, const std::vector<char>& payload) {
+void StopAndWaitSender::sendWithRetry(const packet_header::Header& header, const std::vector<char>& payload) {
     const int MAX_RETRIES = 5;
     int attempts = 0;
 
@@ -32,14 +35,14 @@ void StopAndWaitSender::sendWithRetry(const packet_header& header, const std::ve
         bool received = (ackCond.wait_for(lock, std::chrono::milliseconds(300), [this]{ return ackReceived.load(); }));
 
         if (received) {
-            std::cout << "[ACK] received for fragment " << header.fields.fragment_id << "\n";
+            std::cout << "[ACK] received for fragment " << header.fragment_id << "\n";
             break;
         }
         else {
             attempts ++;
-            std::cout << "[TIMEOUT] Retrying fragment " << header.fields.fragment_id << " (attempts)";
+            std::cout << "[TIMEOUT] Retrying fragment " << header.fragment_id << " (attempts)";
             if (attempts > MAX_RETRIES) {
-                std::cout << "[FAILURE] Giving up on fragment: " << header.fields.fragment_id << "\n";
+                std::cout << "[FAILURE] Giving up on fragment: " << header.fragment_id << "\n";
                 break;
             }
         }
@@ -48,9 +51,9 @@ void StopAndWaitSender::sendWithRetry(const packet_header& header, const std::ve
 
 
     if (!ackReceived) {
-        std::cout << "[FAILURE] Giving up on fragment " << header.fields.fragment_id << "\n";
+        std::cout << "[FAILURE] Giving up on fragment " << header.fragment_id << "\n";
     } else {
-        std::cout << "[ACK] received for fragment" << header.fields.fragment_id << "\n";
+        std::cout << "[ACK] received for fragment" << header.fragment_id << "\n";
     }
 }
 

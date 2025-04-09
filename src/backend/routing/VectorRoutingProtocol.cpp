@@ -1,7 +1,5 @@
 #include "VectorRoutingProtocol.h"
 #include "Route.h"
-#include <bitset>
-#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -106,12 +104,12 @@ namespace vector_routing_protocol {
 
 
         // myself
-        if(myRoutingTable.count(THE_ADDRESSOR_20000.my_addr) <= 0){
+        if(myRoutingTable.count(THE_ADDRESSOR_20000.get_my_addr()) <= 0){
             Route * r = (Route *) malloc(sizeof(Route *));
-            r->next_hop = THE_ADDRESSOR_20000.my_addr;
+            r->next_hop = THE_ADDRESSOR_20000.get_my_addr();
             r->cost = 0;
-            r->destination_node = THE_ADDRESSOR_20000.my_addr;
-            myRoutingTable[THE_ADDRESSOR_20000.my_addr]=r; 
+            r->destination_node = THE_ADDRESSOR_20000.get_my_addr();
+            myRoutingTable[THE_ADDRESSOR_20000.get_my_addr()]=r; 
         }
 
 
@@ -135,10 +133,13 @@ namespace vector_routing_protocol {
             printf("Got a new neighbor !! Discovered node %d\n",src_node_addr);
             puts("Checking if it does not share the same address as ours");
 
-            if(src_node_addr == THE_ADDRESSOR_20000.my_addr){
+            if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
                 puts("Oh NOOO ! Address collision. Starting recovery process...");
-                
                 THE_ADDRESSOR_20000.gen_random_addr();
+                // if we kept the same address, let it stay at cost 0
+                if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr())
+                    link_cost = 0;
+
             }else{
                 puts("Okay ! no collision, registering this new neighbour :D");
                 // still, new node means we have to register it
@@ -212,7 +213,7 @@ namespace vector_routing_protocol {
 
 
 
-                        if(dest_node != THE_ADDRESSOR_20000.my_addr){
+                        if(dest_node != THE_ADDRESSOR_20000.get_my_addr()){
                             printf("Got a new route !! Discovered node %d\n",dest_node);
                             // insert newly discovered route in the table
                             Route * r = (Route *) malloc(sizeof(Route *));
@@ -335,7 +336,7 @@ namespace vector_routing_protocol {
                     // somehow we got a table full of 0 at the very start of the alrgorithm
                     // We didn't manage to find WHY ????????????????????
                     // so, here we are, doing some patch-up job x'(
-                    if( (myRoutingTable[i]->cost == 0) && (i != THE_ADDRESSOR_20000.my_addr) ){
+                    if( (myRoutingTable[i]->cost == 0) && (i != THE_ADDRESSOR_20000.get_my_addr()) ){
                         r->cost = INFINITY_COST;
                     }
 
@@ -343,7 +344,7 @@ namespace vector_routing_protocol {
 
             }else{
                 // path to ourselve
-                if(i == THE_ADDRESSOR_20000.my_addr){
+                if(i == THE_ADDRESSOR_20000.get_my_addr()){
                     r->cost = 0;
                 }else{
                     // node we don't know yet ( we know it exists because of the rule of 6)
@@ -361,7 +362,15 @@ namespace vector_routing_protocol {
 
         }
 
-        return serialize_table(tmp_routing_table);
+        packet_header::Header h;
+        h.dest_address = dest_node;
+        h.next_hop_address = dest_node;
+        h.source_address = dynamic_addressing::get_my_addr();
+        h.message_id = 1;
+        h.fragment_id = 0;
+        h.payload_length = 8;
+        h.type = packet_header::types(echo);
+        return packet_header::add_header_to_payload(h, serialize_table(tmp_routing_table));
 
     }
 
@@ -407,8 +416,8 @@ namespace vector_routing_protocol {
     }
 
     Header VectorRoutingProtocol::extract_header(std::vector<char> payload){
-        uint32_t header = (payload[0] << 24) | (payload[1] << 16) | (payload[2] << 8) | payload[3];
-        Header h = get_separated_header(header);
+        uint32_t header_int = bytes_vector_to_header_int(payload);
+        Header h = get_separated_header(header_int);
         return h;
     }
 
@@ -428,7 +437,7 @@ namespace vector_routing_protocol {
             r->destination_node = i;
 
 
-            if(THE_ADDRESSOR_20000.my_addr != i){
+            if(THE_ADDRESSOR_20000.get_my_addr() != i){
                 r->cost = INFINITY_COST;
             }else{
                 r->cost = 0;
@@ -440,6 +449,10 @@ namespace vector_routing_protocol {
             myRoutingTable[i] = r;
         }
 
+    }
+
+    void VectorRoutingProtocol::predict_next_hop(packet_header::Header * h){
+        h->next_hop_address = myRoutingTable[h->dest_address]->next_hop;
     }
     
 }

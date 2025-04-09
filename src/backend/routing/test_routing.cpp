@@ -1,4 +1,3 @@
-#include <bitset>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -8,11 +7,6 @@
 #include <vector>
 #include "VectorRoutingProtocol.h"
 
-
-/*
-TODO : see why returned table is empty; check if table serialization still stands
-
-*/
 
 // Mock classes or functions if necessary
 
