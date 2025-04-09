@@ -8,6 +8,8 @@
 #include "utils/Message.h"
 #include "backend/mac/MediumAccessControl.h"
 #include "backend/channel_state/ChannelState.h"
+#include "backend/routing/VectorRoutingProtocol.h"
+#include "utils/packet_header.h"
 
 std::string SERVER_ADDR = "netsys.ewi.utwente.nl"; //"127.0.0.1"
 int SERVER_PORT = 8954;
@@ -39,20 +41,41 @@ int main() {
 
 	client.startThread();
 
+	vector_routing_protocol::VectorRoutingProtocol v_r_proto;
+
+	v_r_proto.start_thread(&senderQueue);
+	
+
+
+
 	thread inputHandler(readInput, &senderQueue);
 	
 	// Handle messages from the server / audio framework
 	while(true){
 		Message temp = receiverQueue.pop(); // wait for a message to arrive
 		cout << "Received: " << temp.type << endl;
+		packet_header::Header h;
 		switch (temp.type) {
 		case DATA: // We received a data frame!
-			cout << "DATA: ";
+			/*cout << "DATA: ";
 			for (char c : temp.data) {
 				cout << c << ",";
 			}
-			cout << endl;
+			cout << endl;*/
+
+
+			// ECHO REQUEST HANDLING
+
+			h = packet_header::get_separated_header(
+				packet_header::bytes_vector_to_header_int(temp.data)
+			);
+
+			if(h.type == packet_header::echo){
+				v_r_proto.register_echo(temp.data);
+			}
+
 			break;
+			
 		case DATA_SHORT: // We received a short data frame!
 			cout << "DATA_SHORT: ";
 			for (char c : temp.data) {

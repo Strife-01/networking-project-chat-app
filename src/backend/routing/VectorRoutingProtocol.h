@@ -7,6 +7,8 @@
 #include "Route.h"
 #include "../../utils/packet_header.h"
 #include "../addressing/Addressing.h"
+#include "../../utils/BlockingQueue.h"
+#include "../../utils/Message.h"
 
 #define BROADCAST_ADDR 0
 #define MAXIMUM_COST 4
@@ -37,6 +39,7 @@ namespace vector_routing_protocol {
         packet_header::Header extract_header(std::vector<char> payload);
         void print_route(Route * r);
         void predict_next_hop(packet_header::Header * h);
+        void start_thread(BlockingQueue< Message >* senderQueue);
 
 
     private:
@@ -44,7 +47,17 @@ namespace vector_routing_protocol {
 
         void init_internal_table();
 
+
+        static void * tick(void * arg);
+
+  
     };
+
+    struct thread_args {
+        BlockingQueue< Message >* senderQueue;
+        vector_routing_protocol::VectorRoutingProtocol* context;
+    };
+
 
 }
 #endif

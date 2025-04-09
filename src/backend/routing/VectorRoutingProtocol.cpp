@@ -1,13 +1,17 @@
 #include "VectorRoutingProtocol.h"
 #include "Route.h"
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <pthread.h>
 #include <stdio.h>
 #include <cstdio>
 #include <vector>
 #include <iomanip>
+#include <thread>
 
 
 namespace vector_routing_protocol {
@@ -454,6 +458,38 @@ namespace vector_routing_protocol {
     void VectorRoutingProtocol::predict_next_hop(packet_header::Header * h){
         h->next_hop_address = myRoutingTable[h->dest_address]->next_hop;
     }
+
+    static void * tick(void * args) {
+        struct thread_args * ta = (struct thread_args *) args;
+    
+        for(int i = 1;i<=MAX_NODE_NUMBER;i++){
+            if(ta->context->neighbors[i]){
+                std::vector<char> packet = ta->context->build_custom_echo(i);
+                Message sendMessage = Message(DATA, packet);
+                ta->senderQueue->push(sendMessage); // if this is what you want
+            }
+        
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    
+        free(ta); // Clean up memory if you're done
+        return NULL;
+    }
+    
+    void VectorRoutingProtocol::start_thread(BlockingQueue< Message >* senderQueue){
+        pthread_t ticking_thread_id;
+        struct thread_args * args = (struct thread_args *) malloc(sizeof(struct thread_args));
+    
+        args->context = this;
+        args->senderQueue = senderQueue;
+    
+        pthread_create(&ticking_thread_id, NULL, VectorRoutingProtocol::tick, args);
+    }
+
+ 
+
+
     
 }
 
