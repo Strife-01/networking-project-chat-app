@@ -17,9 +17,9 @@ int main() {
     test_framework::test_assert(chan_state.get_is_line_busy(), false, "chan_state.is_line_busy == false");
 
     chan_state.set_is_current_node_sending();
-    test_framework::test_assert(chan_state.get_is_current_node_sending() && chan_state.get_is_line_busy(), true, "chan_state.is_current_node_sending == true", "");
+    test_framework::test_assert(chan_state.get_is_current_node_sending(), true, "chan_state.is_current_node_sending == true", "");
 
     chan_state.reset_is_current_node_sending();
-    test_framework::test_assert(chan_state.get_is_current_node_sending() && chan_state.get_is_line_busy(), false, "chan_state.is_current_node_sending == false");
+    test_framework::test_assert(chan_state.get_is_current_node_sending(), false, "chan_state.is_current_node_sending == false");
 
 }

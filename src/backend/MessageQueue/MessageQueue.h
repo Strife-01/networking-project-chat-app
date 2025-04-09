@@ -6,17 +6,35 @@
 #define MESSAGEQUEUE_H
 #include <cstdint>
 #include <string>
+#include <vector>
+#include <mutex>
+#include <unordered_map>
 
 namespace Message_Queue {
 
+/*
+    This is the place where the final messges will be placed and the Front End
+    for each individual node will collect them from here.
+ */
 class MessageQueue {
 public:
-    MessageQueue();
-private:
-    typedef struct {
+    struct Message{
         std::string message;
-        uint8_t message_address;
-    } Message;
+        uint8_t sender_address;
+        bool private_message;
+        bool seen_message;
+    };
+    MessageQueue();
+    void push_message(const Message& message);
+    void push_message(const Message& message, const uint8_t sender_address);
+    const std::vector<Message> get_messages(); // get bradcast messages
+    const std::vector<Message> get_messages(const uint8_t sender); // get targeted messages
+    bool has_unseen_messages(const uint8_t sender); // check if there are unseen messages from the sender
+
+private:
+    // 0 is broadcast; source_id for targeted
+    std::unordered_map<uint8_t, std::vector<Message> > messageQueue;
+    std::mutex mutex;
 };
 
 } // Message_Queue

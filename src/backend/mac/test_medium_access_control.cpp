@@ -59,7 +59,7 @@ int main() {
     if (current_wait_time == 0) {
         test_framework::test_assert(mac_object.get_wait_time(), static_cast<uint16_t>(0) , "", "Testing time to wait decrement", "The wait time should not decrement below 0");
     } else {
-        test_framework::test_assert(mac_object.get_wait_time(), current_wait_time , "", "Testing time to wait decrement");
+        test_framework::test_assert(mac_object.get_wait_time(), static_cast<uint16_t>(current_wait_time - static_cast<uint16_t>(1)), "", "Testing time to wait decrement");
     }
     std::cout << "[DEBUG] mac_object.time_to_wait = " << mac_object.get_wait_time() << "\n" << std::endl;
 
