@@ -76,7 +76,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Makefile Target.test (2)">
+  <component name="RunManager" selected="Makefile Target.test">
     <configuration name="test_medium_access_control.cpp" type="CppFileRunConfiguration" factoryName="CppFileRunConfiguration" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="networking-project-chat-app" TARGET_NAME="test_medium_access_control.cpp" CONFIG_NAME="test_medium_access_control.cpp">
       <option name="sourceFile" value="src/backend/mac/test_medium_access_control.cpp" />
       <method v="2">
@@ -109,9 +109,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Makefile Target.test" />
         <item itemvalue="Makefile Target.test (2)" />
         <item itemvalue="Makefile Target.test (1)" />
-        <item itemvalue="Makefile Target.test" />
         <item itemvalue="Makefile Target.all" />
         <item itemvalue="C/C++ File.test_medium_access_control.cpp" />
       </list>
@@ -126,7 +126,7 @@
       <option name="presentableId" value="Default" />
       <updated>1743690405046</updated>
       <workItem from="1743690406641" duration="4497000" />
-      <workItem from="1744028728178" duration="41563000" />
+      <workItem from="1744028728178" duration="50914000" />
     </task>
     <servers />
   </component>
