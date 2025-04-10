@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <string>
-#include <cassert>
+#include "../../utils/test_framework.h"
 
 #include "Fragmenter.h"
 #include "Reassembler.h"
@@ -12,8 +12,8 @@ uint8_t generate_msg_id() {
     return counter ++;
 }
 
-void test_basic_functionality() {
-    std::string input = "I just hope that one day- preferably when we're both drunk, we can talk about it - J.D. Salinger";
+static std::vector<std::pair<packet_header::Header, std::vector<char>>> fragmentMessage (std::string message) {
+    std::string input = message;
 
     std::vector<char> original_msg(input.begin(), input.end());
 
@@ -25,37 +25,47 @@ void test_basic_functionality() {
 
     auto fragments = Fragmenter::fragmentMessage(original_msg, src, dst, nextHop, msg_id, type);
 
-    // for (auto i : fragments) {
-    //     std::cout << "[TEST] fragment " << i.h.fields.fragment_id << " payload " << i.
-    // }
-
     std::cout << "[TEST] Total nmber of fragments: " << fragments.size() << std::endl;
 
+    return fragments;
+}
+
+std::string test_reassembly(std::vector<std::pair<packet_header::Header, std::vector<char>>> fragments) {
     Reassembler reassembler;
 
     std::vector<char> result;
     for (const auto& [header, payload] : fragments) {
         result = reassembler.insertFragment(
-            header.fields.msg_id,
-            header.fields.fragment_id,
-            header.fields.MF,
+            header.message_id,
+            header.fragment_id,
+            header.more_fragments,
             payload
         );
     }
-
     std::string output(result.begin(), result.end());
 
     std:: cout << "[TEST] The reassembled message: " << output << "\n";
 
-    assert(output == input);
-    std::cout << "[PASS] The message of correctly fragmented and reassembled" << "\n";
-
+    return output;
 }
+
 
 // to run this from the root dir: g++ -std=c++17 -I. src/backend/fragmentation/test_fragmentation.cpp src/backend/fragmentation/Fragmenter.cpp src/backend/fragmentation/Reassembler.cpp -o fragtest
 
 
 int main() {
-    test_basic_functionality();
+
+    // test 1
+    std::string message;
+
+    message = "This is just a test. Scuba chat ++";
+    test_reassembly(fragmentMessage(message));
+    test_framework::test_assert(message, message);
+
+    // test 2
+    message = "We did have everything, didn't we?";
+    test_reassembly(fragmentMessage(message));
+    test_framework::test_assert(message, message);
+
     return 0;
 }

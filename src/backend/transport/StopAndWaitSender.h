@@ -1,29 +1,36 @@
 #pragma once
 
-#include <cstdint>
 #include <vector>
-#include <utility>
-#include <thread>
-#include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
+#include <functional>
+#include "../routing/VectorRoutingProtocol.h"
 #include "../../utils/packet_header.h"
 
 class StopAndWaitSender {
 public:
-    StopAndWaitSender();
+    StopAndWaitSender(vector_routing_protocol::VectorRoutingProtocol* routing);
 
+    // function to send packets
+    void setSendFunction(std::function<void(const std::vector<char>&)> func);
+
+    // receive an ACK
+    void handleAck(uint8_t msg_id, uint16_t fragment_id);
+
+    // send a sequence of fragments reliably
     void sendFragments(const std::vector<std::pair<packet_header::Header, std::vector<char>>>& fragments);
 
-    void handleAck(uint8_t msg_id, uint8_t fragment_id);
-
 private:
-    void sendWithRetry(const packet_header::Header& header, const std::vector<char>& payload);
+    vector_routing_protocol::VectorRoutingProtocol* routing;
+    std::function<void(const std::vector<char>&)> sendFunc;
 
-    std::atomic<bool> ackReceived;
     std::mutex ackMutex;
     std::condition_variable ackCond;
+    std::atomic<bool> ackReceived;
 
     uint8_t current_msg_id;
     uint16_t current_fragment_id;
+
+    void sendWithRetry(packet_header::Header header, const std::vector<char>& payload);
 };

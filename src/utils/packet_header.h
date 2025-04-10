@@ -20,7 +20,8 @@ namespace packet_header {
 
     enum types:uint8_t{
         echo,
-        data
+        data,
+        ack
     };
     
     struct __attribute__((__packed__)) Header {
