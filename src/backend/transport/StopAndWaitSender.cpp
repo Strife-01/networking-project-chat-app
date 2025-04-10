@@ -3,10 +3,17 @@
 #include <thread>
 #include <chrono>
 
+/* Fragments a message into packets
+ * Sends each packet to the next next_hop
+ * waits for an ack from the destination
+ * retransmits if timeout
+ */
+
 StopAndWaitSender::StopAndWaitSender(vector_routing_protocol::VectorRoutingProtocol* routing)
     : routing(routing), ackReceived(false) {}
 
 void StopAndWaitSender::setSendFunction(std::function<void(const std::vector<char>&)> func) {
+   // here implement the actual sender function
     sendFunc = func;
 }
 

@@ -3,14 +3,24 @@
 #include "StopAndWaitReceiver.h"
 #include <iostream>
 
+/*
+ * Receives packets
+ * if it's the next hop, forwards the packet
+ * if it's the destination, send an ack_packet
+ * reassembles fragments
+ *
+ */
+
 StopAndWaitReceiver::StopAndWaitReceiver(vector_routing_protocol::VectorRoutingProtocol* routing)
     : routing(routing) {}
 
 void StopAndWaitReceiver::setSendFunction(std::function<void(const std::vector<char>&)> callback) {
+    // use the sender function
     sendFunc = callback;
 }
 
 void StopAndWaitReceiver::setOnMessageReady(std::function<void(std::vector<char>)> callback) {
+    // a message is ready when we have received all the fragments
     onMessageReady = callback;
 }
 
