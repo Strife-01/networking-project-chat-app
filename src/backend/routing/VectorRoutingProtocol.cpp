@@ -15,15 +15,18 @@
 #include <thread>
 #include "../channel_state/ChannelState.h"
 #include "../mac/MediumAccessControl.h"
+#include "../../utils/Random.h"
 
 namespace vector_routing_protocol {
     using namespace packet_header;
 
-    VectorRoutingProtocol::VectorRoutingProtocol() {
+    VectorRoutingProtocol::VectorRoutingProtocol(BlockingQueue< Message >* sq) {
 
+
+        senderQueue = sq;
         // first a foremost, to route something we need our own address :)
         THE_ADDRESSOR_20000 = dynamic_addressing::DynamicAddressing();
-        THE_ADDRESSOR_20000.gen_random_addr();
+        //THE_ADDRESSOR_20000.gen_random_addr();
         // init routing table
         init_internal_table();
     }
@@ -97,6 +100,8 @@ namespace vector_routing_protocol {
     void VectorRoutingProtocol::register_echo(std::vector<char> payload) {
  
         
+        bool changes_have_been_made = false;
+
         Header h = extract_header(payload);
 
         //print_pkt_header(h);
@@ -132,21 +137,24 @@ namespace vector_routing_protocol {
 
             if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
                 puts("Oh NOOO ! Address collision. Starting recovery process...");
-                
+
+                THE_ADDRESSOR_20000.gen_random_addr();
+
+                uint8_t new_addr = THE_ADDRESSOR_20000.get_my_addr();
 
 
                 // if we kept the same address, let it stay at cost 0
-                if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
+                if(src_node_addr == new_addr){
                     link_cost = 0;
 
                 }else{
                     // else, put the cost of our new address to 0 !
                     Route * r = (Route *) malloc(sizeof(Route *));
-                    r->destination_node = THE_ADDRESSOR_20000.get_my_addr();
-                    r->next_hop = THE_ADDRESSOR_20000.get_my_addr();
+                    r->destination_node = new_addr;
+                    r->next_hop = new_addr;
                     r->cost = 0;
                     r->TTL =MAX_TTL;
-                    myRoutingTable[src_node_addr]=r; 
+                    myRoutingTable[new_addr]=r; 
                 }
 
                 
@@ -168,7 +176,7 @@ namespace vector_routing_protocol {
             r->TTL =MAX_TTL;
             myRoutingTable[src_node_addr]=r; 
 
-            
+            changes_have_been_made = true;
         }
            
 
@@ -204,6 +212,7 @@ namespace vector_routing_protocol {
                                 myRoutingTable[dest_node]->cost
                             );
                             
+                            changes_have_been_made = true;
                             myRoutingTable[dest_node]->cost = potential_new_cost;
                             myRoutingTable[dest_node]->next_hop = src_node_addr;
                             myRoutingTable[dest_node]->TTL =MAX_TTL;
@@ -232,6 +241,7 @@ namespace vector_routing_protocol {
                             r->cost = potential_new_cost;
                             r->TTL =MAX_TTL;
                             myRoutingTable[dest_node]=r;
+                            changes_have_been_made = true;
                         }
                         
                         
@@ -251,8 +261,9 @@ namespace vector_routing_protocol {
 
                 if(
                 (myRoutingTable[dest_node]->next_hop == src_node_addr) 
-                && (dest_node != dynamic_addressing::get_my_addr())
+                && (dest_node != THE_ADDRESSOR_20000.get_my_addr())
                 ){
+                    changes_have_been_made = true;
                     // advertise this path as broken
                     printf("Broken link advertisment detected !!\n path to %d going throught %d\n",dest_node,src_node_addr);
                     myRoutingTable[dest_node]->cost = INFINITY_COST;
@@ -269,7 +280,11 @@ namespace vector_routing_protocol {
 
         THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable);
         
-        
+
+        if(changes_have_been_made){
+            start_broadcasting_thread();
+        }
+
     }
 
 
@@ -292,18 +307,18 @@ namespace vector_routing_protocol {
                 // if we are trying to send a packet to 
                 // a node that has one of our route passing throught it
                 // set this route cost to infinity
-                if(myRoutingTable[i]->next_hop == i){
-                    r->cost = INFINITY_COST;
-                }else{
+                // if((myRoutingTable[i]->next_hop == i) && ( i != THE_ADDRESSOR_20000.get_my_addr())){
+                //     r->cost = INFINITY_COST;
+                // }else{
 
-                    // somehow we got a table full of 0 at the very start of the alrgorithm
-                    // We didn't manage to find WHY ????????????????????
-                    // so, here we are, doing some patch-up job x'(
-                    if( (myRoutingTable[i]->cost == 0) && (i != THE_ADDRESSOR_20000.get_my_addr()) ){
-                        r->cost = INFINITY_COST;
-                    }
+                //     // somehow we got a table full of 0 at the very start of the alrgorithm
+                //     // We didn't manage to find WHY ????????????????????
+                //     // so, here we are, doing some patch-up job x'(
+                //     if( (myRoutingTable[i]->cost == 0) && (i != THE_ADDRESSOR_20000.get_my_addr()) ){
+                //         r->cost = INFINITY_COST;
+                //     }
 
-                }
+                // }
 
             }else{
                 // path to ourselve
@@ -475,60 +490,46 @@ namespace vector_routing_protocol {
 
         bool first_run = true;
 
-        srand(time(NULL));
-
         while(true){
 
-            int ttw = rand() % 1000 + MEAN_RTT;
+
+
+            Medium_Access_Control::mac_object.recalculate_wait_time();
+            int ttw = Random::get(0,1000) + Medium_Access_Control::mac_object.get_wait_time();
+
+            if(ta->context->broadcast_to  <= 0){
+                ta->context->start_broadcasting_thread();
+            }
+
+
             puts("[+] TICK -> sending new echo to all neighbours.");
             ta->context->print_interntal_table();
             for(int i = 1;i<=MAX_NODE_NUMBER;i++){
                 
                 ta->context->myRoutingTable[i]->TTL --;
-                if(ta->context->myRoutingTable[i]->TTL -- <= 0){
-                    ta->context->myRoutingTable[i]->cost = INFINITY_COST;
-                    ta->context->myRoutingTable[i]->TTL = MAX_TTL;
+
+                if(ta->context->myRoutingTable[i]->TTL <= 0){
                     // if it was a neighbour, as the TTL expired,
                     // do not consider him as neighbour anymore
                     // in case of a topology change
                     ta->context->put_neighbour_as_inactive(i);
 
                 }
-
                 // ta->context->neighbors[i] || first_run
-                if(true){
-                    std::vector<char> packet = ta->context->build_custom_echo(i);
-                    if(!Channel_State::chan_state.get_is_line_busy()
-                        || (Channel_State::chan_state.get_is_line_busy() 
-                                && Channel_State::chan_state.get_is_current_node_sending())
-                    ){
-
-                        // sleep a random amount of time before sending
-
-                        this_thread::sleep_for(chrono::milliseconds(ttw));
-
-                        if(!Channel_State::chan_state.get_is_line_busy()){
-                            Message sendMessage = Message(DATA, packet);
-                            ta->senderQueue->push(sendMessage); // if this is what you want
-                            puts("SENT !");
-                        }
-
-                    }
-
-                    first_run = false;
+                // always checking myself to make sure no cost bug
+                if(i == dynamic_addressing::get_my_addr() ){
+                    ta->context->myRoutingTable[i]->cost = 0;
+                    continue;
                 }
-
-
-
                 //std::this_thread::sleep_for(std::chrono::milliseconds(ttw));
-
-            
             }
-    
 
             ta->context->inactive_neighbours_handling();
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        
+            //std::this_thread::sleep_for(std::chrono::milliseconds(TICK_TIME));
+            ta->context->broadcast_to --;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
         }
     
 
@@ -537,40 +538,34 @@ namespace vector_routing_protocol {
     }
 
 
+
     void VectorRoutingProtocol::inactive_neighbours_handling(){
         for(int i = 1;i<=MAX_NODE_NUMBER;i++){
 
+            if((neighbors[i] == false) && (myRoutingTable[i]->next_hop == i) && (i != THE_ADDRESSOR_20000.get_my_addr())){
+                // INACTIVE NEIGBOR DETECTED
+                printf("Detected inactive neighbor : %d\n",i);
 
-            if((neighbors.count(i) > 0 ) ){
+                // set the corresponding routing entry to infinity
+                // for each routing entry that has this node as nextHop
 
-                if(neighbors[i] == false){
-                    // INACTIVE NEIGBOR DETECTED
+                for(uint32_t j=1;j<=MAX_NODE_NUMBER;j++){
 
-                    printf("Detected inactive neighbor : %d\n",i);
+                    if(myRoutingTable.count(j) > 0){
+                        if(myRoutingTable[j]->next_hop == i){
 
-                    // set the corresponding routing entry to infinity
-                    // for each routing entry that has this node as nextHop
-
-                    for(uint32_t j=1;j<=MAX_NODE_NUMBER;j++){
-
-                        if(myRoutingTable.count(j) > 0){
-                            if(myRoutingTable[j]->next_hop == i){
-                                myRoutingTable[j]->cost = INFINITY_COST;
-                            }
+                            myRoutingTable[j]->cost = INFINITY_COST;
+                            myRoutingTable[j]->next_hop = 0;
                         }
-                        
-                        // advertise the other neighbors for this broken link
-                        // will be done by sending our table
-
                     }
+                
 
-                    // remove this neighbor from the neighbor table 
-                    neighbors.erase(i);
                 }
+            }
                 
 
 
-            }
+
 
 
         }
@@ -578,24 +573,84 @@ namespace vector_routing_protocol {
 
 
     void VectorRoutingProtocol::register_active_neighbour(uint8_t i){
+        THE_ADDRESSOR_20000.register_addr_used_by_another_node(i);
         neighbors[i] = true;
     }
 
     void VectorRoutingProtocol::put_neighbour_as_inactive(uint8_t i){
-        neighbors[i] = true;
+        //printf("[+] Putting %d neighbour as inactive",i);
+        THE_ADDRESSOR_20000.remove_addr_used_by_another_node(i);
+        neighbors[i] = false;
     }
     
-    void VectorRoutingProtocol::start_thread(BlockingQueue< Message >* senderQueue){
+    void VectorRoutingProtocol::start_ticking_thread(){
         pthread_t ticking_thread_id;
         struct thread_args * args = (struct thread_args *) malloc(sizeof(struct thread_args));
     
         args->context = this;
         args->senderQueue = senderQueue;
+        
     
         pthread_create(&ticking_thread_id, NULL, vector_routing_protocol::tick, args);
     }
 
- 
+    void VectorRoutingProtocol::start_broadcasting_thread(){
+        pthread_t bc_thread_id;
+        struct thread_args * args = (struct thread_args *) malloc(sizeof(struct thread_args));
+    
+        args->context = this;
+        args->senderQueue = senderQueue;
+        
+    
+        pthread_create(&bc_thread_id, NULL, vector_routing_protocol::broadcast_table, args);
+    }
+
+
+
+    static void * broadcast_table(void * args){
+
+        vector_routing_protocol::thread_args * ta = (vector_routing_protocol::thread_args *)args;
+
+        // reset broadcast TTL
+        ta->context->broadcast_to = BROADCAST_TIMEOUT;
+
+
+        Medium_Access_Control::mac_object.recalculate_wait_time();
+        int ttw = Random::get(0,100);// + Medium_Access_Control::mac_object.get_wait_time();
+
+
+        std::vector<char> packet = ta->context->build_custom_echo(0);
+
+        bool sent = false;
+        while(!sent){
+            //printf("TRYING TO SEND");
+
+            if(!Channel_State::chan_state.get_is_line_busy())
+            {
+
+                // sleep a random amount of time before sending
+    
+                this_thread::sleep_for(chrono::milliseconds(ttw));
+    
+                if(!Channel_State::chan_state.get_is_line_busy()
+            
+                ){
+                    Message sendMessage = Message(DATA, packet);
+                    ta->senderQueue->push(sendMessage); // if this is what you want
+                    puts("SENT !");
+                    sent = true;
+                    // wait extra random ms if we had the chance to send.
+                    std::this_thread::sleep_for(std::chrono::milliseconds(Random::get(1000,2000)));
+                    
+                }
+    
+            }
+        }
+
+
+        pthread_exit(0);
+
+    }
 
 
     
@@ -603,9 +658,3 @@ namespace vector_routing_protocol {
 
 
     
-
-
-/*
-
-PB POUR POISON REVERSE : COMMENT REPONDRE A UN NODE
-*/

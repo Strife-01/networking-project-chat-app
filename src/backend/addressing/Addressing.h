@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <vector>
 #include <map>
 #define MAX_NODE_NUMBER 4
@@ -21,8 +22,10 @@ namespace dynamic_addressing {
             DynamicAddressing();
             void gen_random_addr();
             void update_connected_nodes_list_from_RT(std::map<unsigned char,vector_routing_protocol::Route *> nodes);
-            void register_addr_used_by_another_node(unsigned char addr);
+            void register_addr_used_by_another_node(uint8_t addr);
             unsigned char get_my_addr();
+            void remove_addr_used_by_another_node(uint8_t addr);
+
         private:
             std::map<unsigned char,bool> addr_in_use;
             void clear_nodes_addressing_map();
