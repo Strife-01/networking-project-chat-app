@@ -93,7 +93,7 @@ int main() {
 	// handle messages from the server / audio framework
 	while (true) {
 		Message temp = receiverQueue.pop(); // wait for a message to arrive
-		receiverQueue.push(Message(DATA, full_packet));
+		//receiverQueue.push(Message(DATA, full_packet));
 		cout << "Received: " << temp.type << endl;
 
 		packet_header::Header h;
