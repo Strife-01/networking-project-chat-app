@@ -4,6 +4,5 @@ Scuba Chat is a distributed, multi-hop, 4-nodes chat application designed for em
 
 
 TODO :
-- fix id randomness
-- implement random backoff before sending after busy time in vector routing tick
-- find a way to send less tables.
+- increase table broadcast timeout after receiving a table that do not change anything
+- slow down the rate at which we are broadcasting the table to let actual data be sent
