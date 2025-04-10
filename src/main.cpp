@@ -74,9 +74,26 @@ int main() {
 	// use input to send messages
 	thread inputHandler(readInput, &transportManager);
 
+
+	std::vector<char> mock_payload = {'H', 'e', 'l', 'l', 'o', '!', ' ', 'W', 'o', 'r', 'l', 'D'};
+	packet_header::Header mock_header;
+	mock_header.message_id = 1;
+	mock_header.fragment_id = 0;
+	mock_header.source_address = 1;
+	mock_header.dest_address = 4;
+	mock_header.next_hop_address = 2;
+	mock_header.more_fragments = 0;
+	mock_header.payload_length = mock_payload.size();
+	mock_header.type = packet_header::data;
+
+	std::vector<char> full_packet = packet_header::add_header_to_payload(mock_header, mock_payload);
+
+
+
 	// handle messages from the server / audio framework
 	while (true) {
 		Message temp = receiverQueue.pop(); // wait for a message to arrive
+		receiverQueue.push(Message(DATA, full_packet));
 		cout << "Received: " << temp.type << endl;
 
 		packet_header::Header h;
