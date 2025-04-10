@@ -35,6 +35,8 @@ private slots:
     void handleMemberClick(QListWidgetItem *item);
     void sendPrivateMessage(const QString &recipient);
     void privateChatClosed(const QString &contactName);
+    void sendGlobalMessage();
+    void receiveGlobalMessage(const QString& sender, const QString& message);
 
 private:
     QLabel* memberCountLabel;
