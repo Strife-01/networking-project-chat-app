@@ -1,8 +1,12 @@
 #include "chatroomwindow.h"
 #include "privatechatwindow.h"
+#include "MessageQueue.h"
+
+#include <QDateTime>
+
 
 ChatRoomWindow::ChatRoomWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent), myAddress(1) // Ok so since I have no addressing system implemented yet I will just use this
 {
     setWindowTitle("Chat Room");
     resize(800, 600);
@@ -27,7 +31,19 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
     leftLayout->addWidget(new QLabel("Group Chat:", leftPanel));
     leftLayout->addWidget(chatDisplay);
 
-    // Input area at bottom
+    chatDisplay->setStyleSheet(
+        "QTextEdit {"
+        "   background-color: #f9f9f9;"
+        "   font-family: 'Courier New';"
+        "}"
+        "QTextEdit[messageType='global'] {"
+        "   color: #333;"
+        "}"
+        "QTextEdit[messageType='private'] {"
+        "   color: #0066cc;"
+        "}"
+        );
+    // Input area at the bottom
     QWidget *inputWidget = new QWidget(leftPanel);
     QHBoxLayout *inputLayout = new QHBoxLayout(inputWidget);
 
@@ -66,8 +82,14 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
     splitter->addWidget(rightPanel);
     mainLayout->addWidget(splitter);
 
+    // Manual addressing, very smart I know
+    memberAddresses["Alice"] = 2;
+    memberAddresses["Bob"] = 3;
+    memberAddresses["Charlie"] = 4;
     // Connect signals
     connect(memberList, &QListWidget::itemClicked, this, &ChatRoomWindow::handleMemberClick);
+    connect(sendButton, &QPushButton::clicked, this, &ChatRoomWindow::sendGlobalMessage);
+    connect(messageInput, &QLineEdit::returnPressed, this, &ChatRoomWindow::sendGlobalMessage);
 }
 void ChatRoomWindow::updateMemberCount()
 {
@@ -132,7 +154,7 @@ void ChatRoomWindow::sendPrivateMessage(const QString &recipient)
         chatWindow->privateChatDisplay->append("You: " + message);
         chatWindow->privateMessageInput->clear();
 
-        // Here you would normally send the message over the network
+        // Here you would normally send the message over the network, WIP
         // networkInterface->sendPrivateMessage(recipient, message);
     }
 }
@@ -141,6 +163,31 @@ void ChatRoomWindow::privateChatClosed(const QString &contactName)
     if (privateChats.contains(contactName)) {
         privateChats.remove(contactName);
     }
+}
+void ChatRoomWindow::sendGlobalMessage()
+{
+    QString message = messageInput->text();
+    if (message.isEmpty()) return;
+
+    // Create and store global message (address 0 is for broadcast)
+    auto globalMsg = Message_Queue::msg_queue.create_message(
+        myAddress,
+        message.toStdString(),
+        false,  // Not private
+        false   // Not seen
+        );
+    Message_Queue::msg_queue.push_message(globalMsg, 0); // 0 = broadcast address, very shitty btw, will obv not work whith multiple windows on
+
+    // Update UI immediately
+    QString timestamp = QDateTime::currentDateTime().toString("[hh:mm]");
+    chatDisplay->append(timestamp + " You: " + message);
+    messageInput->clear();
+}
+
+void ChatRoomWindow::receiveGlobalMessage(const QString& sender, const QString& message)
+{
+    QString timestamp = QDateTime::currentDateTime().toString("[hh:mm]");
+    chatDisplay->append(timestamp + " " + sender + ": " + message);
 }
 ChatRoomWindow::~ChatRoomWindow()
 {

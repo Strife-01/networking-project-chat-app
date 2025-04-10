@@ -14,9 +14,9 @@ TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtoco
     });
 
     receiver.setOnMessageReady([this](std::vector<char> message) {
-        uint8_t sender_addr = routing->THE_ADDRESSOR_20000.get_my_addr();
 
-        // convert payload into string and queue it
+        uint8_t sender_addr = this->routing->THE_ADDRESSOR_20000.get_my_addr();
+
         std::string str_msg(message.begin(), message.end());
 
         auto final_msg = Message_Queue::msg_queue.create_message(
@@ -28,7 +28,6 @@ TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtoco
 
         Message_Queue::msg_queue.push_message(final_msg);
 
-        // also notify upper layers
         if (onMessageReady) onMessageReady(message);
     });
 }

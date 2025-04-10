@@ -24,18 +24,18 @@ using namespace std;
 
 void readInput(TransportManager* tm) {
 	while (true) {
-		std::string input;
-		std::cout << "\nMessage to send: ";
-		std::getline(std::cin, input);
+		string input;
+		cout << "\nMessage to send: ";
+		getline(std::cin, input);
 
 		if (input.empty()) continue;
 
-		std::cout << "Destination node ID: ";
+		cout << "Destination node ID: ";
 		int dest;
-		std::cin >> dest;
-		std::cin.ignore();
+		cin >> dest;
+		cin.ignore();
 
-		std::vector<char> message(input.begin(), input.end());
+		vector<char> message(input.begin(), input.end());
 		tm->sendMessage(message, static_cast<uint8_t>(dest), packet_header::types::data);
 	}
 }
@@ -71,7 +71,7 @@ int main() {
 		std::cout << "[DELIVERED] Full message: " << str << std::endl;
 	});
 
-	// use input to send messages via TransportManager
+	// use input to send messages
 	thread inputHandler(readInput, &transportManager);
 
 	// handle messages from the server / audio framework

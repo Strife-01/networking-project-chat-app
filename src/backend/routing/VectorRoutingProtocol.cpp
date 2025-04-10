@@ -114,11 +114,11 @@ namespace vector_routing_protocol {
 
         // myself
         if(myRoutingTable.count(THE_ADDRESSOR_20000.get_my_addr()) <= 0){
-            Route * r = (Route *) malloc(sizeof(Route *));
+            Route * r = myRoutingTable[THE_ADDRESSOR_20000.get_my_addr()];//(Route *) malloc(sizeof(Route *));
             r->next_hop = THE_ADDRESSOR_20000.get_my_addr();
             r->cost = 0;
             r->destination_node = THE_ADDRESSOR_20000.get_my_addr();
-            myRoutingTable[THE_ADDRESSOR_20000.get_my_addr()]=r; 
+            //myRoutingTable[THE_ADDRESSOR_20000.get_my_addr()]=r; 
         }
 
 
@@ -149,7 +149,7 @@ namespace vector_routing_protocol {
 
                 }else{
                     // else, put the cost of our new address to 0 !
-                    Route * r = (Route *) malloc(sizeof(Route *));
+                    Route * r = myRoutingTable[new_addr];//(Route *) malloc(sizeof(Route *));
                     r->destination_node = new_addr;
                     r->next_hop = new_addr;
                     r->cost = 0;
@@ -161,22 +161,21 @@ namespace vector_routing_protocol {
 
             }else{
                 puts("Okay ! no collision, registering this new neighbour :D");
-                // still, new node means we have to register it
-                THE_ADDRESSOR_20000.register_addr_used_by_another_node(src_node_addr);
-            }
+           }
 
             unsigned char potential_new_cost = link_cost;
 
 
             // insert newly discovered route in the table
-            Route * r = (Route *) malloc(sizeof(Route *));
+            Route * r = myRoutingTable[src_node_addr];//(Route *) malloc(sizeof(Route *));
             r->destination_node = src_node_addr;
             r->next_hop = src_node_addr;
             r->cost = potential_new_cost;
             r->TTL =MAX_TTL;
-            myRoutingTable[src_node_addr]=r; 
+            //myRoutingTable[src_node_addr]=r; 
 
             changes_have_been_made = true;
+
         }
            
 
@@ -187,8 +186,11 @@ namespace vector_routing_protocol {
 
             // checking whether some destination is already in myRoutingTable, and accessing it:
             unsigned char dest_node = i;
-            
+            puts("oui1");
+
             if(recv_routing_table[dest_node]->cost != INFINITY_COST){
+                puts("oui2");
+
 
                 unsigned char potential_new_cost =recv_routing_table[dest_node]->cost+link_cost;
 
@@ -222,7 +224,7 @@ namespace vector_routing_protocol {
                             // last if do not check the case of non changing cost
                             // but in that case, we don't want a new route,
                             // just to reset TTL
-                            if(myRoutingTable[dest_node]->cost == potential_new_cost){
+                            if((myRoutingTable[dest_node]->cost == potential_new_cost) && (myRoutingTable[dest_node]->next_hop == src_node_addr)){
                                 myRoutingTable[dest_node]->TTL = MAX_TTL;
                             }
 
@@ -236,11 +238,11 @@ namespace vector_routing_protocol {
                         if(dest_node != THE_ADDRESSOR_20000.get_my_addr()){
                             printf("Got a new route !! Discovered node %d\n",dest_node);
                             // insert newly discovered route in the table
-                            Route * r = (Route *) malloc(sizeof(Route *));
+                            Route * r = myRoutingTable[src_node_addr];
                             r->next_hop = src_node_addr;
                             r->cost = potential_new_cost;
                             r->TTL =MAX_TTL;
-                            myRoutingTable[dest_node]=r;
+                            //myRoutingTable[dest_node]=r;
                             changes_have_been_made = true;
                         }
                         
@@ -254,6 +256,7 @@ namespace vector_routing_protocol {
 
                 
             }else{
+                puts("oui3");
 
                 // remove if we get infinity from a node that was previously our next hop
                 printf("Got infinity cost to node %d from %d\n",dest_node,src_node_addr);
@@ -274,7 +277,6 @@ namespace vector_routing_protocol {
             
         }
 
-    
 
         // updating active neighbours table in the dynamic addressing handler
 
@@ -291,51 +293,6 @@ namespace vector_routing_protocol {
 
     std::vector<char> VectorRoutingProtocol::build_custom_echo(uint32_t dest_node){
 
-        std::map<unsigned char,Route*> tmp_routing_table;
-
-        // split horizon poison reverse
-        for(int i=1;i<=MAX_NODE_NUMBER;i++){
-
-
-
-            Route * r  = (Route *) malloc(sizeof(Route));
-            *r = *myRoutingTable[i];
-
-            if(myRoutingTable.count(i)){
-
-
-                // if we are trying to send a packet to 
-                // a node that has one of our route passing throught it
-                // set this route cost to infinity
-                // if((myRoutingTable[i]->next_hop == i) && ( i != THE_ADDRESSOR_20000.get_my_addr())){
-                //     r->cost = INFINITY_COST;
-                // }else{
-
-                //     // somehow we got a table full of 0 at the very start of the alrgorithm
-                //     // We didn't manage to find WHY ????????????????????
-                //     // so, here we are, doing some patch-up job x'(
-                //     if( (myRoutingTable[i]->cost == 0) && (i != THE_ADDRESSOR_20000.get_my_addr()) ){
-                //         r->cost = INFINITY_COST;
-                //     }
-
-                // }
-
-            }else{
-                // path to ourselve
-                if(i == THE_ADDRESSOR_20000.get_my_addr()){
-                    r->cost = 0;
-                }else{
-                    // node we don't know yet ( we know it exists because of the rule of 6)
-                    r->cost = INFINITY_COST;
-                }
-            }
-            tmp_routing_table[i] = r;
-
-                    
-        
-
-
-        }
 
         packet_header::Header h;
         h.dest_address = dest_node;
@@ -348,37 +305,14 @@ namespace vector_routing_protocol {
         h.more_fragments = false;
         h.type = packet_header::echo;
 
-        std::vector<char> payload = serialize_table(tmp_routing_table);
 
-        /*std::cout << "std::vector<char> payload = {\n";
-        for (size_t i = 0; i < payload.size(); ++i) {
-            if (payload[i] == INFINITY_COST) {
-                std::cout << "    INFINITY_COST";
-            } else {
-                std::cout << "    0x" << std::hex << static_cast<int>(payload[i]);
-            }
-            if (i < payload.size() - 1) {
-                std::cout << ",";
-            }
-            std::cout << "\n";
-        }
-        std::cout << "};\n";*/
+        std::vector<char> payload = serialize_table(myRoutingTable);
+
 
         std::vector<char> serialized_header = packet_header::build_header(h);
-        /*for(int i=0;i<serialized_header.size();i++){
-            std::bitset<8> y(serialized_header[i]);
-            std::cout<<y<<std::endl;
-        }*/
+  
 
-        // THE FUCK UP ZONE HAPPENS HERE
         std::bitset<32> x(packet_header::bytes_vector_to_header_int(serialized_header));
-        //std::cout<<"HEADER BITS : "<<x<<std::endl;
-        // END OF ZONE (on voit les bits a 1 partout en début => les fameux 7)
-        // NORMALEMENT C FIX MTN, A VOIR PLUS AMPLEMENT
-
-        //print_pkt_header(extract_header(serialized_header));
-
-
 
         payload.insert(
             payload.begin(),
@@ -386,9 +320,6 @@ namespace vector_routing_protocol {
             serialized_header.end()
         );
 
-        //std::vector<char> pkt = packet_header::add_header_to_payload(h, serialize_table(tmp_routing_table));
-
-        //print_pkt_header(extract_header(payload));
 
         return payload;
     }
@@ -471,7 +402,6 @@ namespace vector_routing_protocol {
             }else{
                 r->cost = 0;
             }
-
             
             r->next_hop = 0;
             r->TTL = MAX_TTL;
