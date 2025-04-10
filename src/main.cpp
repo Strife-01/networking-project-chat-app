@@ -94,7 +94,6 @@ int main() {
 	while (true) {
 		Message temp = receiverQueue.pop(); // wait for a message to arrive
 		//receiverQueue.push(Message(DATA, full_packet));
-		cout << "Received: " << temp.type << endl;
 
 		packet_header::Header h;
 
@@ -128,7 +127,6 @@ int main() {
 				break;
 
 			case FREE: // The channel is no longer busy (no nodes are sending within our detection range)
-				puts("FREEING LINE LOCK");
 				Channel_State::chan_state.reset_is_line_busy();
 				break;
 
