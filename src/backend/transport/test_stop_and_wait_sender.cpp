@@ -1,27 +1,42 @@
+
+#include "../transport/StopAndWaitSender.h"
 #include "../fragmentation/Fragmenter.h"
-#include "StopAndWaitSender.h"
+#include "../routing/VectorRoutingProtocol.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <cassert>
 
 int main() {
-    std::string msg = "this is a test message - try to see if this is working";
+    vector_routing_protocol::VectorRoutingProtocol routing;
+    routing.THE_ADDRESSOR_20000.gen_random_addr();
+    uint8_t my_addr = routing.THE_ADDRESSOR_20000.get_my_addr();
+    uint8_t dest = 2;
 
-    std::vector<char> data(msg.begin(), msg.end());
+    auto route = new vector_routing_protocol::Route();
+    route->destination_node = dest;
+    route->next_hop = dest;
+    route->cost = 1;
+    routing.myRoutingTable[dest] = route;
 
-    uint8_t src = 1, dst = 2, hop = 2, id = 42, type = 1;
-    auto fragments = Fragmenter::fragmentMessage(data, src, dst, hop, id, type);
+    StopAndWaitSender sender(&routing);
+    sender.setSendFunction([](const std::vector<char>& packet) {
+        std::cout << "[SEND] Packet size: " << packet.size() << std::endl;
+    });
 
-    StopAndWaitSender sender;
+    std::string msg = "fragmentation test message";
+    auto fragments = Fragmenter::fragmentMessage({msg.begin(), msg.end()}, my_addr, dest, dest, 42, 1);
 
-    std::thread ackThread([&]() {
+    std::thread ack_thread([&]() {
         using namespace std::chrono_literals;
-        for (size_t i = 0; i < fragments.size(); ++ i) {
-            std::this_thread::sleep_for(100ms);
-            sender.handleAck(id, i);
+        for (size_t i = 0; i < fragments.size(); ++i) {
+            std::this_thread::sleep_for(200ms);
+            sender.handleAck(42, i);
         }
     });
 
     sender.sendFragments(fragments);
-    ackThread.join();
+    ack_thread.join();
+    std::cout << "StopAndWaitSender test passed\n";
+    return 0;
 }
