@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <thread>
 #include <string>
 #include <cstring>
@@ -42,9 +43,15 @@ int main() {
 	client.startThread();
 
 
-	vector_routing_protocol::VectorRoutingProtocol v_r_proto;
+	printf("Insert static addr >>");
+	unsigned int node_addr;
+	scanf("%d",&node_addr);
+	printf("selected address : %d\n",node_addr);
+	dynamic_addressing::set_my_addr(node_addr);
 
-	v_r_proto.start_thread(&senderQueue);
+	vector_routing_protocol::VectorRoutingProtocol v_r_proto(&senderQueue);
+
+	v_r_proto.start_ticking_thread();
 	
 
 
@@ -86,6 +93,7 @@ int main() {
 			cout << endl;
 			break;
 		case FREE: // The channel is no longer busy (no nodes are sending within our detection range)
+			puts("FREEING LINE LOCK");
 			Channel_State::chan_state.reset_is_line_busy();
 			break;
 		case BUSY: // The channel is busy (A node is sending within our detection range)

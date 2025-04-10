@@ -12,9 +12,11 @@ namespace Medium_Access_Control {
 
     void MediumAccessControl::recalculate_wait_time() {
         std::lock_guard<std::mutex> lock ( mutex );
-        if (this->exponential_backoff < 10) {
+        if (this->exponential_backoff <= 10) {
             this->time_to_wait = 1 << (this->exponential_backoff);
             ++this->exponential_backoff;
+        }else{
+            this->exponential_backoff = 0;
         }
         this->time_to_wait = Random::get<uint16_t>(0, this->time_to_wait);
     }

@@ -14,15 +14,16 @@
 #define MAXIMUM_COST 4
 #define INFINITY_COST 5
 #define MAX_NODE_NUMBER 4
-#define MAX_TTL 10
+#define MAX_TTL 30
+#define BROADCAST_TIMEOUT 5
 #define MEAN_RTT 100 // implement a real computation later
-
+#define TICK_TIME 1000
 
 namespace vector_routing_protocol {
 
     class VectorRoutingProtocol {
     public:
-        VectorRoutingProtocol();
+        VectorRoutingProtocol(BlockingQueue< Message >* senderQueue);
         void register_echo(std::vector<char>);
         std::vector<char> build_custom_echo(uint32_t dest_node);
         std::map<unsigned char,Route *> get_routing_table();
@@ -40,16 +41,21 @@ namespace vector_routing_protocol {
         packet_header::Header extract_header(std::vector<char> payload);
         void print_route(Route * r);
         void predict_next_hop(packet_header::Header * h);
-        void start_thread(BlockingQueue< Message >* senderQueue);
+        void start_ticking_thread();
+        void start_broadcasting_thread();
         void put_neighbour_as_inactive(uint8_t i);
         void register_active_neighbour(uint8_t i);
         void inactive_neighbours_handling();
 
 
+        unsigned int broadcast_to = BROADCAST_TIMEOUT; 
+
     private:
         unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
-
+        BlockingQueue< Message >* senderQueue;
         void init_internal_table();
+
+
 
 
 
@@ -57,6 +63,7 @@ namespace vector_routing_protocol {
     };
 
     static void * tick(void * arg);
+    static void * broadcast_table(void * args);
 
     struct thread_args {
         BlockingQueue< Message >* senderQueue;

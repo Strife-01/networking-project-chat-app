@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <time.h>
@@ -80,6 +81,10 @@ namespace dynamic_addressing {
         return dynamic_addressing::get_my_addr();
     }
 
+    void DynamicAddressing::remove_addr_used_by_another_node(uint8_t addr){
+        this->addr_in_use[addr] = false;
+    }
+
 
 }
 
@@ -121,3 +126,4 @@ void dynamic_addressing::set_my_addr(unsigned char addr){
     }
     fclose(f);
 }
+
