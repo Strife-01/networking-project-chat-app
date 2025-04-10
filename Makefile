@@ -2,7 +2,7 @@
 .SILENT:
 
 src_files := $(shell find -type f -name '*.cpp')
-backend_files := $(shell find ./src/backend -type f -name '*.cpp')
+backend_files := $(shell find ./src/backend ./src/utils ./src/main.cpp -type f -name '*.cpp' ! -name 'test*')
 routing_only_files := $(shell find ./src/backend ./src/utils ./src/main.cpp -type f -name '*.cpp' ! -name 'test*' | sed '/\/fragmentation\//d; /\/transport\//d')
 integration: $(src_files)
 	echo 'Building integration project...'
