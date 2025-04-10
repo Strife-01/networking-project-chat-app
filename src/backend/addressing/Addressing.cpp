@@ -1,11 +1,19 @@
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <time.h>
 #include "Addressing.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 using namespace std;
+
+
+/*
+
+
+*/
 
 
 namespace dynamic_addressing {
@@ -20,6 +28,7 @@ namespace dynamic_addressing {
 
     void DynamicAddressing::gen_random_addr(){
         srandom(time(NULL));
+
         
         unsigned char tmp_addr = get_my_addr();
         // 50% chance to change its addr, as two nodes are concerned
@@ -34,6 +43,7 @@ namespace dynamic_addressing {
 
             set_my_addr(tmp_addr);
         }
+
     }
 
     void DynamicAddressing::update_connected_nodes_list_from_RT(std::map<unsigned char,vector_routing_protocol::Route *> rt){
@@ -77,19 +87,34 @@ namespace dynamic_addressing {
 
 unsigned char dynamic_addressing::get_my_addr(){
 
-    FILE *f = fopen("my_addr.net","rb");
+    // avoid two processes sharing the same address storage file 
+    char file_name[20]; 
+    sprintf(file_name,"my_addr_%d.net",getpid());
+
+    FILE *f = fopen(file_name,"rb");
     unsigned char addr = 0;
     if(f != NULL){
         size_t bytes_read = fread(&addr,sizeof(char),1,f);
-    }
-    fclose(f);
+        fclose(f);
+    }else{
+        // create the file and put a bogus 0 value into it
+        f = fopen(file_name,"ab+");
+        unsigned char buff = 0;
+        fwrite(&buff,sizeof(char),1, f);
+        fclose(f);
 
+    }
     return addr;
 
 }
 
 void dynamic_addressing::set_my_addr(unsigned char addr){
-    FILE *f = fopen("my_addr.net","wb");
+
+    // avoid two processes sharing the same address storage file 
+    char file_name[20]; 
+    sprintf(file_name,"my_addr_%d.net",getpid());
+    
+    FILE *f = fopen(file_name,"wb");
 
     if(f != NULL){
         fwrite(&addr, sizeof(char), 1, f);

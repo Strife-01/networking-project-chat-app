@@ -44,7 +44,10 @@ std::vector<char> packet_header::build_header(const Header& h) {
 
 
 uint32_t packet_header::bytes_vector_to_header_int(std::vector<char> packet){
-    return (packet[0] << 24) | (packet[1] << 16) | (packet[2] << 8) | packet[3];
+    return ((packet[0] << 24) & 0xFF000000) 
+    | ((packet[1] << 16)  & 0x00FF0000)
+    | ((packet[2] << 8)  & 0x0000FF000 )
+    | (packet[3] & 0x000000FF);
 }
 
 std::vector<char> packet_header::add_header_to_payload(packet_header::Header h,std::vector<char> payload){

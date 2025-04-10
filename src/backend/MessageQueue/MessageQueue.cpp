@@ -3,6 +3,7 @@
 //
 
 #include "MessageQueue.h"
+#include <iostream>
 
 namespace Message_Queue {
     MessageQueue::MessageQueue() {
@@ -29,7 +30,7 @@ namespace Message_Queue {
         if (it != messageQueue.end()) {
             it->second.push_back(message);
         } else {
-            std::vector<Message> broadcasts = std::vector<Message>();
+            std::vector<Message> broadcasts;
             broadcasts.push_back(message);
             messageQueue.insert_or_assign(sender_address, broadcasts);
         }
@@ -50,20 +51,27 @@ namespace Message_Queue {
         if (it == messageQueue.end()) {
             return std::vector<Message>();
         }
+        // Turn messages to seen
+        for (auto& message : it->second) {
+            if (!message.seen_message) {
+                message.seen_message = true;
+            }
+        }
         return it->second;
     }
 
     bool MessageQueue::has_unseen_messages(const uint8_t sender) {
         std::lock_guard<std::mutex> lock(mutex);
         auto it = messageQueue.find(sender);
-        if (it != messageQueue.end()) {
-            for (const auto& message : it->second) {
-                if (!message.seen_message) {
-                    return true;
-                }
-            }
+        if (it != messageQueue.end() && !it->second.empty()) {
+            const auto& lastMessage = it->second.back();
+            return !lastMessage.seen_message;
         }
         return false;
+    }
+
+    MessageQueue::Message MessageQueue::create_message(const uint8_t sender, const std::string message, bool private_message, bool seen_message) {
+        return MessageQueue::Message{message, sender, private_message, seen_message};
     }
 
 } // Message_Queue
