@@ -22,11 +22,11 @@ TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtoco
         auto final_msg = Message_Queue::msg_queue.create_message(
             sender_addr,
             str_msg,
-            false, // not private
+            true, // not private
             false  // not seen
         );
 
-        Message_Queue::msg_queue.push_message(final_msg);
+        Message_Queue::msg_queue.push_message(final_msg, sender_addr);
 
         if (onMessageReady) onMessageReady(message);
     });
