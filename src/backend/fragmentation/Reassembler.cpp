@@ -1,6 +1,8 @@
 #include "Reassembler.h"
 #include <cstdint>
 
+// BUFFERS FRAGMENTS, WAITS UNTIL ALL ARE ARRIVED
+
 std::vector<char> Reassembler::insertFragment(
         uint8_t msg_id,
         uint8_t fragment_id,
