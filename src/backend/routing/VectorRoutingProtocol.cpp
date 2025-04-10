@@ -14,7 +14,7 @@
 #include <iomanip>
 #include <thread>
 #include "../channel_state/ChannelState.h"
-
+#include "../mac/MediumAccessControl.h"
 
 namespace vector_routing_protocol {
     using namespace packet_header;
@@ -117,19 +117,12 @@ namespace vector_routing_protocol {
         }
 
 
-        // reset neigboring nodes activity
-        for(int i = 1;i<=MAX_NODE_NUMBER;i++){
-            if(neighbors.count(i)){
-                neighbors[i] = false;
-            }
-    
-        }
-
 
         printf("received echo from %d\n",src_node_addr);
 
         unsigned char link_cost = calculate_link_cost_from_rtt(1);
 
+        register_active_neighbour(src_node_addr);
 
         // check if the sender of the table is a new neighbour of us
         if(myRoutingTable[src_node_addr]->cost == INFINITY_COST || src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
@@ -139,10 +132,22 @@ namespace vector_routing_protocol {
 
             if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
                 puts("Oh NOOO ! Address collision. Starting recovery process...");
-                THE_ADDRESSOR_20000.gen_random_addr();
+                
+
+
                 // if we kept the same address, let it stay at cost 0
-                if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr())
+                if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
                     link_cost = 0;
+
+                }else{
+                    // else, put the cost of our new address to 0 !
+                    Route * r = (Route *) malloc(sizeof(Route *));
+                    r->destination_node = THE_ADDRESSOR_20000.get_my_addr();
+                    r->next_hop = THE_ADDRESSOR_20000.get_my_addr();
+                    r->cost = 0;
+                    r->TTL =MAX_TTL;
+                    myRoutingTable[src_node_addr]=r; 
+                }
 
                 
 
@@ -165,7 +170,6 @@ namespace vector_routing_protocol {
 
             
         }
-        neighbors[src_node_addr] = true;
            
 
         // loop throught the table
@@ -246,8 +250,6 @@ namespace vector_routing_protocol {
 
 
                 if(
-                (myRoutingTable.count(dest_node) > 0)
-                && 
                 (myRoutingTable[dest_node]->next_hop == src_node_addr) 
                 && (dest_node != dynamic_addressing::get_my_addr())
                 ){
@@ -261,48 +263,7 @@ namespace vector_routing_protocol {
             
         }
 
-        
-
-
-        // check inactive neighboors ( that did not send a packet)
-        for(int i = 1;i<=MAX_NODE_NUMBER;i++){
-
-
-            if((neighbors.count(i) > 0 ) ){
-
-                if(neighbors[i] == false){
-                    // INACTIVE NEIGBOR DETECTED
-
-                    printf("Detected inactive neighbor : %d\n",i);
-
-                    // set the corresponding routing entry to infinity
-                    // for each routing entry that has this node as nextHop
-
-                    for(uint32_t j=1;j<=MAX_NODE_NUMBER;j++){
-
-                        if(myRoutingTable.count(j) > 0){
-                            if(myRoutingTable[j]->next_hop == i){
-                                myRoutingTable[j]->cost = INFINITY_COST;
-                            }
-                        }
-                        
-                        // advertise the other neighbors for this broken link
-                        // will be done by sending our table
-
-                    }
-
-                    // remove this neighbor from the neighbor table 
-                    neighbors.erase(i);
-                }
-                
-
-
-            }
-
-
-        }
-
-
+    
 
         // updating active neighbours table in the dynamic addressing handler
 
@@ -313,7 +274,6 @@ namespace vector_routing_protocol {
 
 
 
-    // resetting do not update table
     std::vector<char> VectorRoutingProtocol::build_custom_echo(uint32_t dest_node){
 
         std::map<unsigned char,Route*> tmp_routing_table;
@@ -357,11 +317,8 @@ namespace vector_routing_protocol {
             tmp_routing_table[i] = r;
 
                     
-                
+        
 
-                // pointless to send to non neighbours but well, it's more readable
-                // decrements TTL
-                myRoutingTable[i]->TTL --;
 
         }
 
@@ -437,11 +394,21 @@ namespace vector_routing_protocol {
         puts("========================");
         for(int i=1;i<=table.size();i++){
             if(table.count(i)){
-                printf("|  %d   |  %d   |  %d     |\n",
-                    table[i]->destination_node,
-                    table[i]->cost,
-                    table[i]->next_hop
-                );
+
+                if(i == THE_ADDRESSOR_20000.get_my_addr()){
+                    printf("\033[32m|  %d   |  %d   |  %d     |\033[0m\n",
+                        table[i]->destination_node,
+                        table[i]->cost,
+                        table[i]->next_hop
+                    );
+                }else{
+                    printf("|  %d   |  %d   |  %d     |\n",
+                        table[i]->destination_node,
+                        table[i]->cost,
+                        table[i]->next_hop
+                    );
+                }
+
             }
 
         }
@@ -508,33 +475,58 @@ namespace vector_routing_protocol {
 
         bool first_run = true;
 
+        srand(time(NULL));
+
         while(true){
 
-
+            int ttw = rand() % 1000 + MEAN_RTT;
             puts("[+] TICK -> sending new echo to all neighbours.");
             ta->context->print_interntal_table();
             for(int i = 1;i<=MAX_NODE_NUMBER;i++){
                 
+                ta->context->myRoutingTable[i]->TTL --;
+                if(ta->context->myRoutingTable[i]->TTL -- <= 0){
+                    ta->context->myRoutingTable[i]->cost = INFINITY_COST;
+                    ta->context->myRoutingTable[i]->TTL = MAX_TTL;
+                    // if it was a neighbour, as the TTL expired,
+                    // do not consider him as neighbour anymore
+                    // in case of a topology change
+                    ta->context->put_neighbour_as_inactive(i);
 
-                if(ta->context->neighbors[i] || first_run){
+                }
+
+                // ta->context->neighbors[i] || first_run
+                if(true){
                     std::vector<char> packet = ta->context->build_custom_echo(i);
                     if(!Channel_State::chan_state.get_is_line_busy()
                         || (Channel_State::chan_state.get_is_line_busy() 
                                 && Channel_State::chan_state.get_is_current_node_sending())
                     ){
-                        Message sendMessage = Message(DATA, packet);
-                        ta->senderQueue->push(sendMessage); // if this is what you want
-                        puts("SENT !");
+
+                        // sleep a random amount of time before sending
+
+                        this_thread::sleep_for(chrono::milliseconds(ttw));
+
+                        if(!Channel_State::chan_state.get_is_line_busy()){
+                            Message sendMessage = Message(DATA, packet);
+                            ta->senderQueue->push(sendMessage); // if this is what you want
+                            puts("SENT !");
+                        }
+
                     }
 
                     first_run = false;
                 }
 
 
-                
+
+                //std::this_thread::sleep_for(std::chrono::milliseconds(ttw));
+
             
             }
     
+
+            ta->context->inactive_neighbours_handling();
             std::this_thread::sleep_for(std::chrono::seconds(1));
         
         }
@@ -542,6 +534,55 @@ namespace vector_routing_protocol {
 
         free(ta); // Clean up memory if you're done
         return NULL;
+    }
+
+
+    void VectorRoutingProtocol::inactive_neighbours_handling(){
+        for(int i = 1;i<=MAX_NODE_NUMBER;i++){
+
+
+            if((neighbors.count(i) > 0 ) ){
+
+                if(neighbors[i] == false){
+                    // INACTIVE NEIGBOR DETECTED
+
+                    printf("Detected inactive neighbor : %d\n",i);
+
+                    // set the corresponding routing entry to infinity
+                    // for each routing entry that has this node as nextHop
+
+                    for(uint32_t j=1;j<=MAX_NODE_NUMBER;j++){
+
+                        if(myRoutingTable.count(j) > 0){
+                            if(myRoutingTable[j]->next_hop == i){
+                                myRoutingTable[j]->cost = INFINITY_COST;
+                            }
+                        }
+                        
+                        // advertise the other neighbors for this broken link
+                        // will be done by sending our table
+
+                    }
+
+                    // remove this neighbor from the neighbor table 
+                    neighbors.erase(i);
+                }
+                
+
+
+            }
+
+
+        }
+    }
+
+
+    void VectorRoutingProtocol::register_active_neighbour(uint8_t i){
+        neighbors[i] = true;
+    }
+
+    void VectorRoutingProtocol::put_neighbour_as_inactive(uint8_t i){
+        neighbors[i] = true;
     }
     
     void VectorRoutingProtocol::start_thread(BlockingQueue< Message >* senderQueue){

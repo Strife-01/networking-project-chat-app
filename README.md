@@ -4,7 +4,6 @@ Scuba Chat is a distributed, multi-hop, 4-nodes chat application designed for em
 
 
 TODO :
-- fix address collision procedure
 - fix id randomness
-- with 3 nodes, the medium get too busy ?? every packet sent is not received
-(maybe don't tick at 1 second but a random between one and 5 seconds) 
+- implement random backoff before sending after busy time in vector routing tick
+- find a way to send less tables.

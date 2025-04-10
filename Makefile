@@ -21,4 +21,5 @@ routing_only: $(routing_only_files)
 
 clean:
 	rm integration
+	rm *.net
 
