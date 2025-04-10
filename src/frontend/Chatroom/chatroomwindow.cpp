@@ -1,6 +1,6 @@
 #include "chatroomwindow.h"
 #include "privatechatwindow.h"
-#include "MessageQueue.h"
+#include "../../backend/MessageQueue/MessageQueue.h"
 
 #include <QDateTime>
 
@@ -156,6 +156,9 @@ void ChatRoomWindow::sendPrivateMessage(const QString &recipient)
 
         // Here you would normally send the message over the network, WIP
         // networkInterface->sendPrivateMessage(recipient, message);
+
+
+
     }
 }
 void ChatRoomWindow::privateChatClosed(const QString &contactName)
