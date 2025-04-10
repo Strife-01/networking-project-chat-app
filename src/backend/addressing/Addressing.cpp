@@ -104,7 +104,7 @@ unsigned char dynamic_addressing::get_my_addr(){
         fclose(f);
 
     }
-    return getpid() % 5;
+    return addr;
 
 }
 
