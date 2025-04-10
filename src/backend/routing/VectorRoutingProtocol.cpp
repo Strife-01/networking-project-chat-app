@@ -14,7 +14,7 @@
 #include <iomanip>
 #include <thread>
 #include "../channel_state/ChannelState.h"
-
+#include "../mac/MediumAccessControl.h"
 
 namespace vector_routing_protocol {
     using namespace packet_header;
@@ -139,10 +139,22 @@ namespace vector_routing_protocol {
 
             if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
                 puts("Oh NOOO ! Address collision. Starting recovery process...");
-                THE_ADDRESSOR_20000.gen_random_addr();
+                
+
+
                 // if we kept the same address, let it stay at cost 0
-                if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr())
+                if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
                     link_cost = 0;
+
+                }else{
+                    // else, put the cost of our new address to 0 !
+                    Route * r = (Route *) malloc(sizeof(Route *));
+                    r->destination_node = THE_ADDRESSOR_20000.get_my_addr();
+                    r->next_hop = THE_ADDRESSOR_20000.get_my_addr();
+                    r->cost = 0;
+                    r->TTL =MAX_TTL;
+                    myRoutingTable[src_node_addr]=r; 
+                }
 
                 
 
@@ -246,8 +258,6 @@ namespace vector_routing_protocol {
 
 
                 if(
-                (myRoutingTable.count(dest_node) > 0)
-                && 
                 (myRoutingTable[dest_node]->next_hop == src_node_addr) 
                 && (dest_node != dynamic_addressing::get_my_addr())
                 ){
@@ -265,7 +275,12 @@ namespace vector_routing_protocol {
 
 
         // check inactive neighboors ( that did not send a packet)
-        for(int i = 1;i<=MAX_NODE_NUMBER;i++){
+
+        // NOT INSIGHTFULL HERE, AS COLLISIONS ARE COMMON SO A NODE CAN APPEAR OFFLINE
+        // FOR A MOMENT
+
+
+        /*for(int i = 1;i<=MAX_NODE_NUMBER;i++){
 
 
             if((neighbors.count(i) > 0 ) ){
@@ -300,7 +315,7 @@ namespace vector_routing_protocol {
             }
 
 
-        }
+        }*/
 
 
 
@@ -508,9 +523,11 @@ namespace vector_routing_protocol {
 
         bool first_run = true;
 
+        srand(time(NULL));
+
         while(true){
 
-
+            int ttw = rand() % 1000 + MEAN_RTT; 
             puts("[+] TICK -> sending new echo to all neighbours.");
             ta->context->print_interntal_table();
             for(int i = 1;i<=MAX_NODE_NUMBER;i++){
@@ -522,9 +539,17 @@ namespace vector_routing_protocol {
                         || (Channel_State::chan_state.get_is_line_busy() 
                                 && Channel_State::chan_state.get_is_current_node_sending())
                     ){
-                        Message sendMessage = Message(DATA, packet);
-                        ta->senderQueue->push(sendMessage); // if this is what you want
-                        puts("SENT !");
+
+                        // sleep a random amount of time before sending
+
+                        this_thread::sleep_for(chrono::milliseconds(ttw));
+
+                        if(!Channel_State::chan_state.get_is_line_busy()){
+                            Message sendMessage = Message(DATA, packet);
+                            ta->senderQueue->push(sendMessage); // if this is what you want
+                            puts("SENT !");
+                        }
+
                     }
 
                     first_run = false;

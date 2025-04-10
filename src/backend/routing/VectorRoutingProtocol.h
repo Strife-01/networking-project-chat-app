@@ -14,7 +14,8 @@
 #define MAXIMUM_COST 4
 #define INFINITY_COST 5
 #define MAX_NODE_NUMBER 4
-#define MAX_TTL 4
+#define MAX_TTL 5
+#define MEAN_RTT 100 // implement a real computation later
 
 
 namespace vector_routing_protocol {
