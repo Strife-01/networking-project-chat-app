@@ -40,6 +40,8 @@ private:
     QLabel* memberCountLabel;
     void setupGroupChatUI();
     QHash<QString, PrivateChatWindow*> privateChats; // Stores all active private chats
+    QHash<QString, uint8_t> memberAddresses;
+    uint8_t myAddress;
 };
 
 #endif // CHATROOMWINDOW_H

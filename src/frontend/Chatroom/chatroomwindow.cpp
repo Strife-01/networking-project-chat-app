@@ -92,17 +92,22 @@ void ChatRoomWindow::removeMember(const QString& memberName)
 void ChatRoomWindow::handleMemberClick(QListWidgetItem *item)
 {
     QString memberName = item->text();
+    if (memberName == "You") return;
 
     if (!privateChats.contains(memberName)) {
-        // Create new private chat window
-        PrivateChatWindow *privateChat = new PrivateChatWindow(memberName, this);
+        // Get the member's address from your mapping
+        uint8_t memberAddress = memberAddresses.value(memberName, 0); // Default to 0 if not found
+
+        // Create new private chat window with all required parameters
+        PrivateChatWindow *privateChat = new PrivateChatWindow(
+            memberName,      // contactName
+            memberAddress,   // contactAddress
+            myAddress,       // myAddress (should be set elsewhere in your ChatRoomWindow)
+            this            // parent
+            );
+
         privateChats[memberName] = privateChat;
 
-        // Connect signals
-        connect(privateChat->privateSendButton, &QPushButton::clicked,
-                this, [this, memberName]() { sendPrivateMessage(memberName); });
-
-        // Handle window closing
         connect(privateChat, &PrivateChatWindow::finished,
                 this, [this, memberName](int result) {
                     Q_UNUSED(result);
