@@ -6,17 +6,17 @@
 #include <chrono>
 #include <vector>
 
-/* Fragments a message into packets
- * Sends each packet to the next next_hop
- * waits for an ack from the destination
- * retransmits if timeout
+/**
+ * Fragments a message into packets
+ * Sends each packet to the next_hop
+ * waits for an ack for the destination (IF IT'S NOT A BROADCAST)
+ * retransmits if timeout (if not broacast)
  */
 
 StopAndWaitSender::StopAndWaitSender(vector_routing_protocol::VectorRoutingProtocol* routing)
     : routing(routing), ackReceived(false) {}
 
 void StopAndWaitSender::setSendFunction(std::function<void(const std::vector<char>&)> func) {
-   // here implement the actual sender function
     sendFunc = func;
 }
 
@@ -35,7 +35,7 @@ void StopAndWaitSender::handleAck(std::vector<char> packet) {
             thread sf(sendFunc,forwarded);
             sf.detach();
         }
-        std::cout << "[FORWARD] ACK for" << h.dest_address << "\n";
+        std::cout << "[FORWARD] ACK for " << (int)h.dest_address << "\n";
     }
 
     if (h.message_id == current_msg_id && h.fragment_id == current_fragment_id) {
@@ -60,6 +60,24 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
     uint8_t my_addr = routing->THE_ADDRESSOR_20000.get_my_addr();
     header.source_address = my_addr;
 
+    // handle broadcast case (dest = 0) -> HOW TO STOP A BROADCAST
+    bool isBroadcast = (header.dest_address == 0);
+    if (isBroadcast) {
+        header.next_hop_address = 0;
+        header.payload_length = payload.size();
+        std::vector<char> packet = packet_header::add_header_to_payload(header, payload);
+
+        std::cout << "[BROADCAST] Sending broadcast fragment " << header.fragment_id << "\n";
+
+        if (sendFunc) {
+            std::thread sf(sendFunc, packet);
+            sf.detach();
+        }
+
+        return; // if it's broadcast, don't wait for acks
+    }
+
+    // normal unicast routing logic
     auto table = routing->get_routing_table();
     if (table.count(header.dest_address)) {
         header.next_hop_address = table[header.dest_address]->next_hop;
@@ -71,11 +89,6 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
     header.payload_length = payload.size();
     std::vector<char> packet = packet_header::add_header_to_payload(header, payload);
 
-    if (header.source_address != my_addr && header.next_hop_address != my_addr) {
-        std::cout << "[SKIP] Not source or next hop\n";
-        return;
-    }
-
     {
         std::lock_guard<std::mutex> lock(ackMutex);
         ackReceived = false;
@@ -86,16 +99,12 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
                   << ", frag " << header.fragment_id
                   << ", attempt " << (attempts + 1) << "\n";
 
-
         if (sendFunc) {
-            thread sf(sendFunc,packet);
+            std::thread sf(sendFunc, packet);
             sf.detach();
         }
-        
-
 
         std::unique_lock<std::mutex> lock(ackMutex);
-
         if (ackCond.wait_for(lock, std::chrono::milliseconds(TIMEOUT), [this] { return ackReceived.load(); })) {
             std::cout << "[DELIVERED] Fragment " << header.fragment_id << "\n";
             return;
