@@ -45,7 +45,7 @@ void StopAndWaitReceiver::sendAck(uint8_t msg_id, uint16_t frag_id, uint8_t dest
 
     std::vector<char> ack_packet = packet_header::build_header(ack);
     if (sendFunc) {
-        std::thread sf(sendFunc, ack_packet);
+        thread sf(sendFunc, ack_packet);
         sf.detach();
     }
 }

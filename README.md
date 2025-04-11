@@ -4,5 +4,6 @@ Scuba Chat is a distributed, multi-hop, 4-nodes chat application designed for em
 
 
 TODO :
-- increase table broadcast timeout after receiving a table that do not change anything
-- slow down the rate at which we are broadcasting the table to let actual data be sent
+- Fix segfault after message
+- Dynamic addressing idea : when we connect and do not have an address, pick one not used  from the first echo request we get.
+if we timeout first, generate a random one.

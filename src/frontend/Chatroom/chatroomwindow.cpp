@@ -2,7 +2,7 @@
 #include "privatechatwindow.h"
 #include "../../backend/MessageQueue/MessageQueue.h"
 #include "../../backend/addressing/Addressing.h"
-
+#include <QMessageBox>
 #include <QDateTime>
 
 using  namespace std;
@@ -211,11 +211,14 @@ void ChatRoomWindow::receivePrivateMessage(uint8_t sender, std::vector<char> msg
     msg.push_back('\0');
 
     const QString sender_str = "Node_"+QString::number(sender);
-    const QString message = QString::fromLatin1(msg);
+    const QString message = QString::fromLocal8Bit(msg);
 
-    PrivateChatWindow *chatWindow = privateChats[sender_str];
+    /*PrivateChatWindow *chatWindow = privateChats[sender_str];
     chatWindow->privateChatDisplay->append(sender_str+" : " + message);
-    chatWindow->privateMessageInput->clear();
+    chatWindow->privateMessageInput->clear();*/
+
+    QMessageBox::information(this, "New Message !",sender_str+" : " + message );
+
 }
 
 ChatRoomWindow::~ChatRoomWindow()
