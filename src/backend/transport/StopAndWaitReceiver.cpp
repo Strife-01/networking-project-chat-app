@@ -60,6 +60,12 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
     // BROADCAST HANDLING
     bool isBroadcast = (header.dest_address == 0);
 
+    if (isBroadcast) {
+        auto id = std::make_pair(header.source_address, header.message_id);
+        if (seenBroadcasts.count(id)) return; // already seen message
+        seenBroadcasts.insert(id);
+    }
+
     // FORWARDING CASE - we don't send an ack if it's a broadcast or if we are forwarding
     if ((header.next_hop_address == me) && !isBroadcast) {
         if (header.dest_address != me) {

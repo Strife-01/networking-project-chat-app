@@ -15,7 +15,6 @@ TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtoco
     });
 
     receiver.setOnMessageReady([this](std::vector<char> message) {
-
         uint8_t sender_addr = this->routing->THE_ADDRESSOR_20000.get_my_addr();
 
         std::string str_msg(message.begin(), message.end());
@@ -23,13 +22,13 @@ TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtoco
         auto final_msg = Message_Queue::msg_queue.create_message(
             sender_addr,
             str_msg,
-            true, // not private
+            true,  // not private
             false  // not seen
         );
 
         Message_Queue::msg_queue.push_message(final_msg, sender_addr);
 
-        if (onMessageReady) onMessageReady(sender_addr,message);
+        if (onMessageReady) onMessageReady(sender_addr, message);
     });
 }
 
@@ -43,13 +42,18 @@ void TransportManager::setOnMessageReady(std::function<void(uint8_t addr,std::ve
 
 void TransportManager::sendMessage(std::vector<char> message, uint8_t dest, uint8_t type) {
     uint8_t my_addr = routing->THE_ADDRESSOR_20000.get_my_addr();
-    if (!routing->get_routing_table().count(dest)) {
-        std::cout << "[TransportManager] No route to destination " << (int)dest << "\n";
-        return;
-    }
-
-    uint8_t next_hop = routing->get_routing_table()[dest]->next_hop;
     uint8_t msg_id = next_msg_id++;
+
+    uint8_t next_hop = 0;
+
+    // for broadcast, no routing lookup
+    if (dest != 0) {
+        if (!routing->get_routing_table().count(dest)) {
+            std::cout << "[TransportManager] No route to destination " << (int)dest << "\n";
+            return;
+        }
+        next_hop = routing->get_routing_table()[dest]->next_hop;
+    }
 
     auto fragments = Fragmenter::fragmentMessage(
         message, my_addr, dest, next_hop, msg_id, type

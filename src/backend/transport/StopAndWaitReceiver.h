@@ -6,6 +6,7 @@
 #include "../fragmentation/Reassembler.h"
 #include "../multihop-relay/MultihopRelay.h"
 #include "../../utils/packet_header.h"
+#include <set>
 
 #define TIMEOUT 15000
 
@@ -22,6 +23,8 @@ private:
     vector_routing_protocol::VectorRoutingProtocol* routing;
     Reassembler reassembler;
     multihop_relay::MultihopRelay relay;
+    // so we avoid infinte loops when broadcasting
+    std::set<std::pair<uint8_t, uint8_t>> seenBroadcasts;
 
     std::function<void(std::vector<char>)> sendFunc;
     std::function<void(std::vector<char>)> onMessageReady;
