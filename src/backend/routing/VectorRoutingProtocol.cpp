@@ -30,7 +30,7 @@ namespace vector_routing_protocol {
         // init routing table
         init_internal_table();
 
-        THE_ADDRESSOR_20000.gen_random_addr();
+        //THE_ADDRESSOR_20000.gen_random_addr();
     }
 
 
@@ -123,32 +123,13 @@ namespace vector_routing_protocol {
             //puts("Checking if it does not share the same address as ours");
 
             if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
-                //puts("Oh NOOO ! Address collision. Starting recovery process...");
-
-                THE_ADDRESSOR_20000.gen_random_addr();
-
-                uint8_t new_addr = THE_ADDRESSOR_20000.get_my_addr();
-
-
-                // if we kept the same address, let it stay at cost 0
-                if(src_node_addr == new_addr){
-                    link_cost = 0;
-
-                }else{
-                    // else, put the cost of our new address to 0 !
-                    Route * r = myRoutingTable[new_addr];//(Route *) malloc(sizeof(Route *));
-                    r->destination_node = new_addr;
-                    r->next_hop = new_addr;
-                    r->cost = 0;
-                    r->TTL =MAX_TTL;
-                    myRoutingTable[new_addr]=r; 
-                }
-
+                
+                
                 
 
             }else{
                 //puts("Okay ! no collision, registering this new neighbour :D");
-           }
+            }
 
             unsigned char potential_new_cost = link_cost;
 
@@ -274,11 +255,27 @@ namespace vector_routing_protocol {
 
         THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable);
         
-
+        uint8_t my_addr = THE_ADDRESSOR_20000.get_my_addr();
         if(changes_have_been_made){
             for(int i=1;i<=MAX_NODE_NUMBER;i++){
+
+                // non-neighbouring collision handling
+                // if we receive a node with our address
+                // advertised as
+
+                if(
+                    (i == my_addr) &&
+                    (recv_routing_table[my_addr]->cost )
+                ){
+
+                }
+
+                // updating table of reachable nodes
                 if(myRoutingTable[i]->cost != INFINITY_COST){
+
                     register_active_node(i);
+
+                    
                 }else{
                     notify_unreachable_node(i);
                 }
@@ -596,6 +593,25 @@ namespace vector_routing_protocol {
 
         pthread_exit(0);
 
+    }
+
+
+    void VectorRoutingProtocol::handle_collision(uint8_t other_node){
+
+        puts("Oh NOOO ! Address collision. Starting recovery process...");
+        
+        THE_ADDRESSOR_20000.gen_random_addr();
+
+        uint8_t new_addr = THE_ADDRESSOR_20000.get_my_addr();
+
+
+        Route * r = myRoutingTable[new_addr];//(Route *) malloc(sizeof(Route *));
+        r->destination_node = new_addr;
+        r->next_hop = new_addr;
+        r->cost = 0;
+        r->TTL =MAX_TTL;
+        myRoutingTable[new_addr]=r; 
+        
     }
 
 

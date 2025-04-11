@@ -125,6 +125,8 @@ void ChatRoomWindow::handleMemberClick(QListWidgetItem *item)
             this            // parent
             );
 
+        privateChat->tm = tm;
+
         privateChats[memberName] = privateChat;
 
         connect(privateChat, &PrivateChatWindow::finished,

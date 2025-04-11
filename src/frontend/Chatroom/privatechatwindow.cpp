@@ -54,10 +54,28 @@ void PrivateChatWindow::sendMessage(const QString &message)
     if (message.isEmpty()) return;
 
 
+    QString shitty_format_msg = privateMessageInput->text();
 
-    // Update UI immediately
-    privateChatDisplay->append("You: " + message);
-    privateMessageInput->clear();
+    if (!shitty_format_msg.isEmpty()) {
+        privateChatDisplay->append("You: " + shitty_format_msg);
+        privateMessageInput->clear();
+
+        // Here you would normally send the message over the network, WIP
+        // networkInterface->sendPrivateMessage(recipient, message);
+
+
+        std::vector<char> message;
+
+        QByteArray ba = shitty_format_msg.toLocal8Bit().data();
+
+        for(int i =0;i<ba.length();i++){
+            message.push_back(ba[i]);
+        }
+
+        tm->sendMessage(message, contactAddress, packet_header::types::data);
+
+    }
+
 }
 
 void PrivateChatWindow::loadHistory()

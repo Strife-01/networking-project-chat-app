@@ -31,12 +31,12 @@ void real_main(ChatRoomWindow * w){
     Client client = Client(SERVER_ADDR, SERVER_PORT, FREQUENCY, TOKEN, &senderQueue, &receiverQueue);
     client.startThread();
 
-    /*printf("Insert static addr >>");
+    printf("Insert static addr >>");
     unsigned int node_addr;
     scanf("%d", &node_addr);
     getchar();
     printf("selected address : %d\n", node_addr);
-    dynamic_addressing::set_my_addr(node_addr);*/
+    dynamic_addressing::set_my_addr(node_addr);
 
     vector_routing_protocol::VectorRoutingProtocol v_r_proto(&senderQueue);
     v_r_proto.start_ticking_thread();

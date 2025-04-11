@@ -6,6 +6,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include "../../backend/transport/TransportManager.h"
 
 class PrivateChatWindow : public QDialog
 {
@@ -19,6 +20,9 @@ public:
     QTextEdit *privateChatDisplay;
     QLineEdit *privateMessageInput;
     QPushButton *privateSendButton;
+
+
+    TransportManager * tm;
 
     QString contactName;
     void sendMessage(const QString &message);
