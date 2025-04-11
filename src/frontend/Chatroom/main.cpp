@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     ChatRoomWindow w;
     w.show();
+    a.exec();
 
 
     BlockingQueue< Message > receiverQueue; // Queue messages will arrive in
@@ -84,7 +85,7 @@ int main(int argc, char *argv[])
     });
 
     // use input to send messages
-    thread inputHandler(readInput, &transportManager);
+    //thread inputHandler(readInput, &transportManager);
 
 
     std::vector<char> mock_payload = {'H', 'e', 'l', 'l', 'o', '!', ' ', 'W', 'o', 'r', 'l', 'D'};
@@ -179,7 +180,6 @@ int main(int argc, char *argv[])
     }
 
 
-    return a.exec();
-
+    return 0;
 }
 

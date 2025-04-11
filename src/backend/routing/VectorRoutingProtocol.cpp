@@ -113,6 +113,7 @@ namespace vector_routing_protocol {
 
         register_active_neighbour(src_node_addr);
 
+        //printf("%d\n",src_node_addr);
         // check if the sender of the table is a new neighbour of us
         if(myRoutingTable[src_node_addr]->cost == INFINITY_COST || src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
 
@@ -416,7 +417,7 @@ namespace vector_routing_protocol {
 
 
             //puts("[+] TICK -> sending new echo to all neighbours.");
-            ta->context->print_interntal_table();
+            //ta->context->print_interntal_table();
             for(int i = 1;i<=MAX_NODE_NUMBER;i++){
                 
                 ta->context->myRoutingTable[i]->TTL --;

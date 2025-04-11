@@ -1,12 +1,14 @@
 #include "chatroomwindow.h"
 #include "privatechatwindow.h"
 #include "../../backend/MessageQueue/MessageQueue.h"
+#include "../../backend/addressing/Addressing.h"
 
 #include <QDateTime>
 
+using  namespace std;
 
 ChatRoomWindow::ChatRoomWindow(QWidget *parent)
-    : QMainWindow(parent), myAddress(1) // Ok so since I have no addressing system implemented yet I will just use this
+    : QMainWindow(parent), myAddress(dynamic_addressing::get_my_addr()) // Ok so since I have no addressing system implemented yet I will just use this
 {
     setWindowTitle("Chat Room");
     resize(800, 600);
@@ -157,6 +159,9 @@ void ChatRoomWindow::sendPrivateMessage(const QString &recipient)
         // Here you would normally send the message over the network, WIP
         // networkInterface->sendPrivateMessage(recipient, message);
 
+
+        vector<char> message(message.begin(), message.end());
+        //tm->sendMessage(message, static_cast<uint8_t>(dest), packet_header::types::data);
 
 
     }

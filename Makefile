@@ -11,7 +11,7 @@ integration: $(src_files)
 
 backend: $(backend_files)
 	echo 'Building integration project...'
-	g++ $(backend_files) -lpthread -o integration
+	g++ $(backend_files) -lpthread -g -o integration
 	echo 'done!'
 
 routing_only: $(routing_only_files)

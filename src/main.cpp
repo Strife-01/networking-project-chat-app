@@ -26,9 +26,11 @@ void readInput(TransportManager* tm) {
 	while (true) {
 		string input;
 		cout << "\nMessage to send: ";
-		getline(std::cin, input);
+		
+		while(input.empty()){
+			getline(std::cin, input);
+		}
 
-		if (input.empty()) continue;
 
 		cout << "Destination node ID: ";
 		int dest;
@@ -54,8 +56,10 @@ int main() {
 	printf("selected address : %d\n", node_addr);
 	dynamic_addressing::set_my_addr(node_addr);
 
+
 	vector_routing_protocol::VectorRoutingProtocol v_r_proto(&senderQueue);
 	v_r_proto.start_ticking_thread();
+	
 
 	// transport Layer
 	TransportManager transportManager(&v_r_proto);
@@ -103,7 +107,8 @@ int main() {
 				);
 
 				// ECHO REQUEST HANDLING
-				if (h.type == packet_header::echo) {
+				if (h.type == packet_header::echo && h.source_address != 0) {
+					//v_r_proto.print_pkt_header(h);
 					v_r_proto.register_echo(temp.data);
 				}
 				// handle DATA packet
@@ -160,9 +165,9 @@ int main() {
 				break;
 		}
 
-		auto delivered = Message_Queue::msg_queue.get_messages();
+		/*auto delivered = Message_Queue::msg_queue.get_messages();
 		for (auto& m : delivered) {
 			std::cout << "[MSG] From " << (int)m.sender_address << ": " << m.message << "\n";
-		}
+		}*/
 	}
 }
