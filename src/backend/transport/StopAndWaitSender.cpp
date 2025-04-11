@@ -31,7 +31,10 @@ void StopAndWaitSender::handleAck(std::vector<char> packet) {
     uint8_t my_addr = dynamic_addressing::get_my_addr();
     if ((h.dest_address != my_addr) && (h.next_hop_address == my_addr)){
         std::vector<char> forwarded = relay.prepare_header_to_forward(packet, routing->get_routing_table());
-        if (sendFunc) sendFunc(forwarded);
+        if (sendFunc){
+            thread sf(sendFunc,forwarded);
+            sf.detach();
+        }
         std::cout << "[FORWARD] ACK for" << h.dest_address << "\n";
     }
 
@@ -92,7 +95,8 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
 
 
         std::unique_lock<std::mutex> lock(ackMutex);
-        if (ackCond.wait_for(lock, std::chrono::milliseconds(500), [this] { return ackReceived.load(); })) {
+
+        if (ackCond.wait_for(lock, std::chrono::milliseconds(TIMEOUT), [this] { return ackReceived.load(); })) {
             std::cout << "[DELIVERED] Fragment " << header.fragment_id << "\n";
             return;
         }

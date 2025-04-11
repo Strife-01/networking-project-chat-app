@@ -7,6 +7,8 @@
 #include "../multihop-relay/MultihopRelay.h"
 #include "../../utils/packet_header.h"
 
+#define TIMEOUT 15000
+
 class StopAndWaitReceiver {
 public:
     StopAndWaitReceiver(vector_routing_protocol::VectorRoutingProtocol* routing);

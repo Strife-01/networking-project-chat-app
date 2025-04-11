@@ -2,6 +2,7 @@
 
 #include "StopAndWaitReceiver.h"
 #include <iostream>
+#include <thread>
 
 /*
  * Receives packets
@@ -45,7 +46,10 @@ void StopAndWaitReceiver::sendAck(uint8_t msg_id, uint16_t frag_id, uint8_t dest
     ack.payload_length = 0;
 
     std::vector<char> ack_packet = packet_header::build_header(ack);
-    if (sendFunc) sendFunc(ack_packet);
+    if(sendFunc){
+        thread sf(sendFunc,ack_packet);
+        sf.detach();
+    } 
 }
 
 void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
