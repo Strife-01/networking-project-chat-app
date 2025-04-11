@@ -24,48 +24,19 @@ std::string TOKEN = "cpp-03-7E6C90A2264E5B3996";
 using namespace std;
 
 
-void readInput(TransportManager* tm) {
-    while (true) {
-        string input;
-        cout << "\nMessage to send: ";
-        getline(std::cin, input);
-
-        if (input.empty()) continue;
-
-        cout << "Destination node ID: ";
-        int dest;
-        cin >> dest;
-        cin.ignore();
-
-        vector<char> message(input.begin(), input.end());
-        tm->sendMessage(message, static_cast<uint8_t>(dest), packet_header::types::data);
-    }
-}
-
-int main(int argc, char *argv[])
-{
-
-
-
-
-    QApplication a(argc, argv);
-    ChatRoomWindow w;
-    w.show();
-    a.exec();
-
-
+void real_main(ChatRoomWindow * w){
     BlockingQueue< Message > receiverQueue; // Queue messages will arrive in
     BlockingQueue< Message > senderQueue;   // Queue for data to transmit
 
     Client client = Client(SERVER_ADDR, SERVER_PORT, FREQUENCY, TOKEN, &senderQueue, &receiverQueue);
     client.startThread();
 
-    printf("Insert static addr >>");
+    /*printf("Insert static addr >>");
     unsigned int node_addr;
     scanf("%d", &node_addr);
     getchar();
     printf("selected address : %d\n", node_addr);
-    dynamic_addressing::set_my_addr(node_addr);
+    dynamic_addressing::set_my_addr(node_addr);*/
 
     vector_routing_protocol::VectorRoutingProtocol v_r_proto(&senderQueue);
     v_r_proto.start_ticking_thread();
@@ -73,32 +44,51 @@ int main(int argc, char *argv[])
     // transport Layer
     TransportManager transportManager(&v_r_proto);
 
+    // passing transport manager to the window
+    w->tm =&transportManager;
+
     // send outgoing transport packets using senderQueue
     transportManager.setSendFunction([&](const std::vector<char>& packet) {
-        senderQueue.push(Message(DATA, packet));
+        bool sent = false;
+        int ttw = Random::get(0,100);
+        puts("trying to send");
+        while(!sent){
+
+            if(!Channel_State::chan_state.get_is_line_busy())
+            {
+
+                // sleep a random amount of time before sending
+
+                this_thread::sleep_for(chrono::milliseconds(ttw));
+
+                if(!Channel_State::chan_state.get_is_line_busy()
+
+                    ){
+                    puts("TIME WINDOW OPEN");
+                    senderQueue.push(Message(DATA, packet));
+                    sent = true;
+                }
+
+            }
+        }
+
+        puts("message actually sent");
+
+        pthread_exit(0);
     });
 
     // handle full reassembled messages and queue them
-    transportManager.setOnMessageReady([](std::vector<char> msg) {
+    transportManager.setOnMessageReady([&w](uint8_t addr,std::vector<char> msg) {
         std::string str(msg.begin(), msg.end());
+
+        if(addr == 0){
+            w->receiveGlobalMessage(addr,msg);
+        }else{
+            w->receivePrivateMessage(addr,msg);
+        }
+
         std::cout << "[DELIVERED] Full message: " << str << std::endl;
     });
-
-    // use input to send messages
-    //thread inputHandler(readInput, &transportManager);
-
-
-    std::vector<char> mock_payload = {'H', 'e', 'l', 'l', 'o', '!', ' ', 'W', 'o', 'r', 'l', 'D'};
-    packet_header::Header mock_header;
-    mock_header.message_id = 1;
-    mock_header.fragment_id = 0;
-    mock_header.source_address = 1;
-    mock_header.next_hop_address = 2;
-    mock_header.more_fragments = 0;
-    mock_header.payload_length = mock_payload.size();
-    mock_header.type = packet_header::data;
-
-    std::vector<char> full_packet = packet_header::add_header_to_payload(mock_header, mock_payload);
 
 
 
@@ -117,6 +107,8 @@ int main(int argc, char *argv[])
 
             // ECHO REQUEST HANDLING
             if (h.type == packet_header::echo) {
+                puts("RECEIVED ECHO");
+                w->updateMemberList();
                 v_r_proto.register_echo(temp.data);
             }
             // handle DATA packet
@@ -125,7 +117,7 @@ int main(int argc, char *argv[])
             }
             // handle ACK
             else if (h.type == packet_header::ack) {
-                transportManager.onAckReceived(h.message_id, h.fragment_id);
+                transportManager.onAckReceived(temp.data);
             }
 
             break;
@@ -178,8 +170,17 @@ int main(int argc, char *argv[])
             std::cout << "[MSG] From " << (int)m.sender_address << ": " << m.message << "\n";
         }
     }
+}
 
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+    ChatRoomWindow w;
 
-    return 0;
+    w.show();
+    thread f(real_main,&w);
+    f.detach();
+
+    return a.exec();
 }
 

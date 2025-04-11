@@ -29,6 +29,8 @@ namespace vector_routing_protocol {
         //THE_ADDRESSOR_20000.gen_random_addr();
         // init routing table
         init_internal_table();
+
+        THE_ADDRESSOR_20000.gen_random_addr();
     }
 
 
@@ -195,6 +197,7 @@ namespace vector_routing_protocol {
                                 potential_new_cost,
                                 myRoutingTable[dest_node]->cost
                             );*/
+
                             
                             changes_have_been_made = true;
                             myRoutingTable[dest_node]->cost = potential_new_cost;
@@ -254,6 +257,7 @@ namespace vector_routing_protocol {
                 (myRoutingTable[dest_node]->next_hop == src_node_addr) 
                 && (dest_node != THE_ADDRESSOR_20000.get_my_addr())
                 ){
+
                     changes_have_been_made = true;
                     // advertise this path as broken
                     //printf("Broken link advertisment detected !!\n path to %d going throught %d\n",dest_node,src_node_addr);
@@ -272,6 +276,13 @@ namespace vector_routing_protocol {
         
 
         if(changes_have_been_made){
+            for(int i=1;i<=MAX_NODE_NUMBER;i++){
+                if(myRoutingTable[i]->cost != INFINITY_COST){
+                    register_active_node(i);
+                }else{
+                    notify_unreachable_node(i);
+                }
+            }
             start_broadcasting_thread();
         }
 
@@ -394,7 +405,9 @@ namespace vector_routing_protocol {
             r->next_hop = 0;
             r->TTL = MAX_TTL;
             myRoutingTable[i] = r;
+            reachable_nodes[i] = false;
         }
+
 
     }
 
@@ -495,14 +508,24 @@ namespace vector_routing_protocol {
 
 
     void VectorRoutingProtocol::register_active_neighbour(uint8_t i){
-        THE_ADDRESSOR_20000.register_addr_used_by_another_node(i);
         neighbors[i] = true;
+
+    }
+
+    void VectorRoutingProtocol::register_active_node(uint8_t i){
+        THE_ADDRESSOR_20000.register_addr_used_by_another_node(i);
+        reachable_nodes[i] = true;
+    }
+    void VectorRoutingProtocol::notify_unreachable_node(uint8_t i){
+        THE_ADDRESSOR_20000.remove_addr_used_by_another_node(i);
+        reachable_nodes[i] = false;
     }
 
     void VectorRoutingProtocol::put_neighbour_as_inactive(uint8_t i){
         ////printf("[+] Putting %d neighbour as inactive",i);
         THE_ADDRESSOR_20000.remove_addr_used_by_another_node(i);
         neighbors[i] = false;
+
     }
     
     void VectorRoutingProtocol::start_ticking_thread(){
@@ -543,6 +566,7 @@ namespace vector_routing_protocol {
 
         std::vector<char> packet = ta->context->build_custom_echo(0);
 
+        ta->context->print_interntal_table();
         bool sent = false;
         while(!sent){
             ////printf("TRYING TO SEND");

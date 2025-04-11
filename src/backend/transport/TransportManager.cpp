@@ -29,7 +29,7 @@ TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtoco
 
         Message_Queue::msg_queue.push_message(final_msg, sender_addr);
 
-        if (onMessageReady) onMessageReady(message);
+        if (onMessageReady) onMessageReady(sender_addr,message);
     });
 }
 
@@ -37,7 +37,7 @@ void TransportManager::setSendFunction(std::function<void(const std::vector<char
     sendFunc = func;
 }
 
-void TransportManager::setOnMessageReady(std::function<void(std::vector<char>)> callback) {
+void TransportManager::setOnMessageReady(std::function<void(uint8_t addr,std::vector<char>)> callback) {
     onMessageReady = callback;
 }
 

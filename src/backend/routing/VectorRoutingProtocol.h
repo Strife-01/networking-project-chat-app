@@ -21,6 +21,9 @@
 
 namespace vector_routing_protocol {
 
+    inline std::map<unsigned char,bool> neighbors;
+    inline std::map<unsigned char,bool> reachable_nodes;
+
     class VectorRoutingProtocol {
     public:
         VectorRoutingProtocol(BlockingQueue< Message >* senderQueue);
@@ -29,7 +32,7 @@ namespace vector_routing_protocol {
         std::map<unsigned char,Route *> get_routing_table();
 
         std::map<unsigned char,Route *> myRoutingTable;
-        std::map<unsigned char,bool> neighbors;
+        //std::map<unsigned char,bool> neighbors;
 
         std::vector<char> serialize_table(std::map<unsigned char,Route *>);
         uint32_t calculate_link_cost_from_rtt(const int RTT);
@@ -46,6 +49,8 @@ namespace vector_routing_protocol {
         void put_neighbour_as_inactive(uint8_t i);
         void register_active_neighbour(uint8_t i);
         void inactive_neighbours_handling();
+        void notify_unreachable_node(uint8_t i);
+        void register_active_node(uint8_t i);
 
 
         unsigned int broadcast_to = BROADCAST_TIMEOUT; 

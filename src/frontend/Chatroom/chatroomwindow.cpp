@@ -74,8 +74,7 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
         );
     rightLayout->addWidget(memberList);
 
-    // Add some example members
-    QStringList members = {"Alice", "Bob", "Charlie"};
+
     memberList->addItems(members);
     updateMemberCount();
     rightPanel->setFixedWidth(250);
@@ -84,10 +83,6 @@ ChatRoomWindow::ChatRoomWindow(QWidget *parent)
     splitter->addWidget(rightPanel);
     mainLayout->addWidget(splitter);
 
-    // Manual addressing, very smart I know
-    memberAddresses["Alice"] = 2;
-    memberAddresses["Bob"] = 3;
-    memberAddresses["Charlie"] = 4;
     // Connect signals
     connect(memberList, &QListWidget::itemClicked, this, &ChatRoomWindow::handleMemberClick);
     connect(sendButton, &QPushButton::clicked, this, &ChatRoomWindow::sendGlobalMessage);
@@ -126,7 +121,7 @@ void ChatRoomWindow::handleMemberClick(QListWidgetItem *item)
         PrivateChatWindow *privateChat = new PrivateChatWindow(
             memberName,      // contactName
             memberAddress,   // contactAddress
-            myAddress,       // myAddress (should be set elsewhere in your ChatRoomWindow)
+            dynamic_addressing::get_my_addr(),       // myAddress (should be set elsewhere in your ChatRoomWindow)
             this            // parent
             );
 
@@ -150,19 +145,25 @@ void ChatRoomWindow::sendPrivateMessage(const QString &recipient)
     if (!privateChats.contains(recipient)) return;
 
     PrivateChatWindow *chatWindow = privateChats[recipient];
-    QString message = chatWindow->privateMessageInput->text();
+    QString shitty_format_msg = chatWindow->privateMessageInput->text();
 
-    if (!message.isEmpty()) {
-        chatWindow->privateChatDisplay->append("You: " + message);
+    if (!shitty_format_msg.isEmpty()) {
+        chatWindow->privateChatDisplay->append("You: " + shitty_format_msg);
         chatWindow->privateMessageInput->clear();
 
         // Here you would normally send the message over the network, WIP
         // networkInterface->sendPrivateMessage(recipient, message);
 
 
-        vector<char> message(message.begin(), message.end());
-        //tm->sendMessage(message, static_cast<uint8_t>(dest), packet_header::types::data);
+        vector<char> message;
 
+        QByteArray ba = shitty_format_msg.toLocal8Bit().data();
+
+        for(int i =0;i<ba.length();i++){
+            message.push_back(ba[i]);
+        }
+
+        tm->sendMessage(message, static_cast<uint8_t>(memberAddresses[recipient]), packet_header::types::data);
 
     }
 }
@@ -174,32 +175,67 @@ void ChatRoomWindow::privateChatClosed(const QString &contactName)
 }
 void ChatRoomWindow::sendGlobalMessage()
 {
-    QString message = messageInput->text();
-    if (message.isEmpty()) return;
+    QString shitty_format_msg = messageInput->text();
+    if (shitty_format_msg.isEmpty()) return;
 
-    // Create and store global message (address 0 is for broadcast)
-    auto globalMsg = Message_Queue::msg_queue.create_message(
-        myAddress,
-        message.toStdString(),
-        false,  // Not private
-        false   // Not seen
-        );
-    Message_Queue::msg_queue.push_message(globalMsg, 0); // 0 = broadcast address, very shitty btw, will obv not work whith multiple windows on
+    QByteArray ba = shitty_format_msg.toLocal8Bit();
+    vector<char> message;
+    for(int i = 0;i<ba.length();i++){
+        message.push_back(ba[i]);
+    }
+
+    tm->sendMessage(message, static_cast<uint8_t>(0), packet_header::types::data);
+
 
     // Update UI immediately
     QString timestamp = QDateTime::currentDateTime().toString("[hh:mm]");
-    chatDisplay->append(timestamp + " You: " + message);
+    chatDisplay->append(timestamp + " You: " + shitty_format_msg);
     messageInput->clear();
 }
 
-void ChatRoomWindow::receiveGlobalMessage(const QString& sender, const QString& message)
+void ChatRoomWindow::receiveGlobalMessage(uint8_t sender, std::vector<char> msg)
 {
+    msg.push_back('\0');
+    const QString sender_str = QString::number(sender);
+    const QString message = QString::fromLatin1(msg);
+
     QString timestamp = QDateTime::currentDateTime().toString("[hh:mm]");
-    chatDisplay->append(timestamp + " " + sender + ": " + message);
+    chatDisplay->append(timestamp + " " + sender_str + ": " + message);
 }
+
+
+void ChatRoomWindow::receivePrivateMessage(uint8_t sender, std::vector<char> msg)
+{
+    msg.push_back('\0');
+
+    const QString sender_str = "Node_"+QString::number(sender);
+    const QString message = QString::fromLatin1(msg);
+
+    PrivateChatWindow *chatWindow = privateChats[sender_str];
+    chatWindow->privateChatDisplay->append(sender_str+" : " + message);
+    chatWindow->privateMessageInput->clear();
+}
+
 ChatRoomWindow::~ChatRoomWindow()
 {
     // Clean up all private chat windows
     qDeleteAll(privateChats);
     privateChats.clear();
+}
+
+void ChatRoomWindow::updateMemberList(){
+
+    members.clear();
+    for(char i=1;i<=MAX_NODE_NUMBER;i++){
+
+        if(vector_routing_protocol::reachable_nodes[i] && i != dynamic_addressing::get_my_addr()){
+            QString addr = "Node_" +QString::number(i);
+            members.append(addr);
+            memberAddresses[addr] = i;
+        }
+    }
+
+    memberList->clear();
+    memberList->addItems(members);
+    updateMemberCount();
 }

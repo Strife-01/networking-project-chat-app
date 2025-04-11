@@ -12,6 +12,7 @@
 #include <QLabel>
 #include <QHash>
 #include "privatechatwindow.h"
+#include "../../backend/transport/TransportManager.h"
 
 class ChatRoomWindow : public QMainWindow
 {
@@ -30,13 +31,18 @@ public:
     void addMember(const QString& memberName);
     void removeMember(const QString& memberName);
 
+    TransportManager * tm;
+    QStringList members;
+
+    void updateMemberList();
+    void receiveGlobalMessage(uint8_t sender, std::vector<char> msg);
+    void receivePrivateMessage(uint8_t sender, std::vector<char> msg);
 
 private slots:
     void handleMemberClick(QListWidgetItem *item);
     void sendPrivateMessage(const QString &recipient);
     void privateChatClosed(const QString &contactName);
     void sendGlobalMessage();
-    void receiveGlobalMessage(const QString& sender, const QString& message);
 
 private:
     QLabel* memberCountLabel;

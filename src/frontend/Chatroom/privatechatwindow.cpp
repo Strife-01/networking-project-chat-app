@@ -53,14 +53,7 @@ void PrivateChatWindow::sendMessage(const QString &message)
 {
     if (message.isEmpty()) return;
 
-    // Create and store message (only in recipient's queue)
-    auto newMsg = Message_Queue::msg_queue.create_message(
-        myAddress,
-        message.toStdString(),
-        true,  // private_message
-        false  // seen_message
-        );
-    Message_Queue::msg_queue.push_message(newMsg, contactAddress);
+
 
     // Update UI immediately
     privateChatDisplay->append("You: " + message);
