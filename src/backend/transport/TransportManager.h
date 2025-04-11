@@ -25,7 +25,7 @@ public:
     void onPacketReceived(const std::vector<char>& packet);
 
     // forward ACKs from network
-    void onAckReceived(uint8_t msg_id, uint16_t fragment_id);
+    void onAckReceived(std::vector<char> packet);
 
 private:
     vector_routing_protocol::VectorRoutingProtocol* routing;

@@ -56,10 +56,15 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
 
     uint8_t me = routing->THE_ADDRESSOR_20000.get_my_addr();
 
+
     // FORWARDING CASE - we don't send an ack if we're forwarding
-    if (header.next_hop_address == me && header.dest_address != me) {
+    if ((header.next_hop_address == me) && (header.dest_address != me)) {
         std::vector<char> forwarded = relay.prepare_header_to_forward(packet, routing->get_routing_table());
-        if (sendFunc) sendFunc(forwarded);
+        
+        if(sendFunc){
+            thread sf(sendFunc,forwarded);
+            sf.detach();
+        }
         std::cout << "[FORWARD] Fragment " << header.fragment_id << " forwarded.\n";
         return;
     }

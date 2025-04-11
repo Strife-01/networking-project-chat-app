@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <pthread.h>
 #include <thread>
 #include <string>
 #include <cstring>
@@ -22,13 +23,18 @@ std::string TOKEN = "cpp-03-7E6C90A2264E5B3996";
 
 using namespace std;
 
-void readInput(TransportManager* tm) {
+void readInput(TransportManager* tm, vector_routing_protocol::VectorRoutingProtocol* v_r_proto) {
 	while (true) {
+		v_r_proto->print_interntal_table();
 		string input;
 		cout << "\nMessage to send: ";
 		
 		while(input.empty()){
 			getline(std::cin, input);
+		}
+
+		if(input == "table"){
+			continue;
 		}
 
 
@@ -66,7 +72,33 @@ int main() {
 
 	// send outgoing transport packets using senderQueue
 	transportManager.setSendFunction([&](const std::vector<char>& packet) {
-		senderQueue.push(Message(DATA, packet));
+		
+		bool sent = false;
+		int ttw = Random::get(0,100);
+		puts("trying to send");
+		while(!sent){
+
+			if(!Channel_State::chan_state.get_is_line_busy())
+			{
+
+				// sleep a random amount of time before sending
+
+				this_thread::sleep_for(chrono::milliseconds(ttw));
+
+				if(!Channel_State::chan_state.get_is_line_busy()
+			
+				){
+					puts("TIME WINDOW OPEN");
+					senderQueue.push(Message(DATA, packet));
+					sent = true;
+				}
+
+			}
+		}
+
+		puts("message actually sent");
+
+		pthread_exit(0);
 	});
 
 	// handle full reassembled messages and queue them
@@ -76,7 +108,7 @@ int main() {
 	});
 
 	// use input to send messages
-	thread inputHandler(readInput, &transportManager);
+	thread inputHandler(readInput, &transportManager,&v_r_proto);
 
 
 	std::vector<char> mock_payload = {'H', 'e', 'l', 'l', 'o', '!', ' ', 'W', 'o', 'r', 'l', 'D'};
@@ -108,16 +140,19 @@ int main() {
 
 				// ECHO REQUEST HANDLING
 				if (h.type == packet_header::echo && h.source_address != 0) {
-					//v_r_proto.print_pkt_header(h);
+					puts("RECEIVED ECHO PACKET");
+					v_r_proto.print_pkt_header(h);
 					v_r_proto.register_echo(temp.data);
 				}
 				// handle DATA packet
 				else if (h.type == packet_header::data) {
+					puts("RECEIVED DATA PACKETS");
+					v_r_proto.print_pkt_header(h);
 					transportManager.onPacketReceived(temp.data);
 				}
 				// handle ACK
 				else if (h.type == packet_header::ack) {
-					transportManager.onAckReceived(h.message_id, h.fragment_id);
+					transportManager.onAckReceived(temp.data);
 				}
 
 				break;

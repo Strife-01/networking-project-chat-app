@@ -11,11 +11,11 @@
 #include "../../utils/Message.h"
 
 #define BROADCAST_ADDR 0
-#define MAXIMUM_COST 4
+#define MAXIMUM_COST 7
 #define INFINITY_COST 5
 #define MAX_NODE_NUMBER 4
 #define MAX_TTL 100
-#define BROADCAST_TIMEOUT 5
+#define BROADCAST_TIMEOUT 20
 #define MEAN_RTT 100 // implement a real computation later
 #define TICK_TIME 1000
 

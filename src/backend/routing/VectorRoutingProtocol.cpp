@@ -117,7 +117,7 @@ namespace vector_routing_protocol {
         // check if the sender of the table is a new neighbour of us
         if(myRoutingTable[src_node_addr]->cost == INFINITY_COST || src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
 
-            //printf("Got a new neighbor !! Discovered node %d\n",src_node_addr);
+            printf("Got a new neighbor !! Discovered node %d\n",src_node_addr);
             //puts("Checking if it does not share the same address as ours");
 
             if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
@@ -206,6 +206,10 @@ namespace vector_routing_protocol {
                             // last if do not check the case of non changing cost
                             // but in that case, we don't want a new route,
                             // just to reset TTL
+
+                            if(myRoutingTable[dest_node]->cost != potential_new_cost){
+                                changes_have_been_made = true;
+                            }
                             /*if(
                                 (myRoutingTable[dest_node]->cost == potential_new_cost)
                                  && (myRoutingTable[dest_node]->next_hop == src_node_addr)
@@ -253,7 +257,7 @@ namespace vector_routing_protocol {
                     changes_have_been_made = true;
                     // advertise this path as broken
                     //printf("Broken link advertisment detected !!\n path to %d going throught %d\n",dest_node,src_node_addr);
-                    myRoutingTable[dest_node]->cost = INFINITY_COST;
+                   // myRoutingTable[dest_node]->cost = INFINITY_COST;
                 }
 
             }
@@ -409,9 +413,10 @@ namespace vector_routing_protocol {
 
 
             Medium_Access_Control::mac_object.recalculate_wait_time();
-            int ttw = Random::get(0,1000) + Medium_Access_Control::mac_object.get_wait_time();
+            int ttw = Random::get(0,1000);// + Medium_Access_Control::mac_object.get_wait_time();
 
             if(ta->context->broadcast_to  <= 0){
+                puts("\nBC TIMEOUT");
                 ta->context->start_broadcasting_thread();
             }
 
@@ -454,6 +459,8 @@ namespace vector_routing_protocol {
 
 
     void VectorRoutingProtocol::inactive_neighbours_handling(){
+
+        bool changes_have_been_made = false;
         for(int i = 1;i<=MAX_NODE_NUMBER;i++){
 
             if((neighbors[i] == false) && (myRoutingTable[i]->next_hop == i) && (i != THE_ADDRESSOR_20000.get_my_addr())){
@@ -462,12 +469,11 @@ namespace vector_routing_protocol {
 
                 // set the corresponding routing entry to infinity
                 // for each routing entry that has this node as nextHop
-
+                changes_have_been_made = true;
                 for(uint32_t j=1;j<=MAX_NODE_NUMBER;j++){
 
                     if(myRoutingTable.count(j) > 0){
                         if(myRoutingTable[j]->next_hop == i){
-
                             myRoutingTable[j]->cost = INFINITY_COST;
                             myRoutingTable[j]->next_hop = 0;
                         }
@@ -479,7 +485,9 @@ namespace vector_routing_protocol {
                 
 
 
-
+            if(changes_have_been_made){
+                //start_broadcasting_thread();
+            }
 
 
         }

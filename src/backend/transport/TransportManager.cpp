@@ -1,5 +1,6 @@
 #include "TransportManager.h"
 #include <iostream>
+#include <vector>
 #include "../MessageQueue/MessageQueue.h"
 
 TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtocol* routing)
@@ -61,6 +62,6 @@ void TransportManager::onPacketReceived(const std::vector<char>& packet) {
     receiver.onPacketReceived(packet);
 }
 
-void TransportManager::onAckReceived(uint8_t msg_id, uint16_t fragment_id) {
-    sender.handleAck(msg_id, fragment_id);
+void TransportManager::onAckReceived(std::vector<char> packet) {
+    sender.handleAck(packet);
 }

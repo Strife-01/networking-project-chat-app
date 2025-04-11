@@ -1,7 +1,10 @@
 #include "StopAndWaitSender.h"
+#include "StopAndWaitReceiver.h"
+#include <cstdint>
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <vector>
 
 /* Fragments a message into packets
  * Sends each packet to the next next_hop
@@ -17,12 +20,25 @@ void StopAndWaitSender::setSendFunction(std::function<void(const std::vector<cha
     sendFunc = func;
 }
 
-void StopAndWaitSender::handleAck(uint8_t msg_id, uint16_t fragment_id) {
+void StopAndWaitSender::handleAck(std::vector<char> packet) {
     std::lock_guard<std::mutex> lock(ackMutex);
-    if (msg_id == current_msg_id && fragment_id == current_fragment_id) {
+    multihop_relay::MultihopRelay relay;
+
+    packet_header::Header h = packet_header::get_separated_header(
+        packet_header::bytes_vector_to_header_int(packet)
+    );
+
+    uint8_t my_addr = dynamic_addressing::get_my_addr();
+    if ((h.dest_address != my_addr) && (h.next_hop_address == my_addr)){
+        std::vector<char> forwarded = relay.prepare_header_to_forward(packet, routing->get_routing_table());
+        if (sendFunc) sendFunc(forwarded);
+        std::cout << "[FORWARD] ACK for" << h.dest_address << "\n";
+    }
+
+    if (h.message_id == current_msg_id && h.fragment_id == current_fragment_id) {
         ackReceived = true;
         ackCond.notify_all();
-        std::cout << "[ACK RECEIVED] msg " << (int)msg_id << ", frag " << fragment_id << "\n";
+        std::cout << "[ACK RECEIVED] msg " << (int) h.message_id << ", frag " << h.fragment_id << "\n";
     }
 }
 
@@ -67,9 +83,13 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
                   << ", frag " << header.fragment_id
                   << ", attempt " << (attempts + 1) << "\n";
 
+
         if (sendFunc) {
-            sendFunc(packet);
+            thread sf(sendFunc,packet);
+            sf.detach();
         }
+        
+
 
         std::unique_lock<std::mutex> lock(ackMutex);
         if (ackCond.wait_for(lock, std::chrono::milliseconds(500), [this] { return ackReceived.load(); })) {

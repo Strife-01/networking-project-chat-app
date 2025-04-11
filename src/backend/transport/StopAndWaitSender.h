@@ -16,7 +16,7 @@ public:
     void setSendFunction(std::function<void(const std::vector<char>&)> func);
 
     // receive an ACK
-    void handleAck(uint8_t msg_id, uint16_t fragment_id);
+    void handleAck(std::vector<char> packet);
 
     // send a sequence of fragments reliably
     void sendFragments(const std::vector<std::pair<packet_header::Header, std::vector<char>>>& fragments);
