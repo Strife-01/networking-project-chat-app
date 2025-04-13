@@ -40,7 +40,7 @@ namespace vector_routing_protocol {
         dynamic_addressing::DynamicAddressing THE_ADDRESSOR_20000;
         void print_table(std::map<unsigned char,Route *>);
         void print_interntal_table();
-        void print_pkt_header(packet_header::Header pkt);
+        static void print_pkt_header(packet_header::Header pkt);
         packet_header::Header extract_header(std::vector<char> payload);
         void print_route(Route * r);
         void predict_next_hop(packet_header::Header * h);

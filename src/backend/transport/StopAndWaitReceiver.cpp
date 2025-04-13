@@ -57,6 +57,8 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
     packet_header::Header header = packet_header::get_separated_header(raw_header);
     uint8_t me = routing->THE_ADDRESSOR_20000.get_my_addr();
 
+    vector_routing_protocol::VectorRoutingProtocol::print_pkt_header(header);
+
     // BROADCAST HANDLING
     bool isBroadcast = (header.dest_address == 0);
 
@@ -85,7 +87,9 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
     }
 
     // Handle delivery
-    std::vector<char> payload(packet.begin() + 4, packet.end());
+    // TO TEST
+    // REPLACED packet.end()
+    std::vector<char> payload(packet.begin() + 4, packet.begin()+header.payload_length+4);
 
     // only send ACKs if this is not a broadcast
     if (!isBroadcast) {
@@ -96,6 +100,8 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
 
     std::vector<char> full = reassembler.insertFragment(header.message_id, header.fragment_id,
                                                         header.more_fragments, payload);
+    
+    
 
     if (!full.empty() && onMessageReady) {
         std::cout << "[DELIVERED] " << (isBroadcast ? "Broadcast" : "Unicast")
