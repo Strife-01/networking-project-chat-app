@@ -86,6 +86,7 @@ namespace vector_routing_protocol {
 
     void VectorRoutingProtocol::register_echo(std::vector<char> payload) {
  
+
         
         bool changes_have_been_made = false;
 
@@ -259,17 +260,6 @@ namespace vector_routing_protocol {
         if(changes_have_been_made){
             for(int i=1;i<=MAX_NODE_NUMBER;i++){
 
-                // non-neighbouring collision handling
-                // if we receive a node with our address
-                // advertised as
-
-                if(
-                    (i == my_addr) &&
-                    (recv_routing_table[my_addr]->cost )
-                ){
-
-                }
-
                 // updating table of reachable nodes
                 if(myRoutingTable[i]->cost != INFINITY_COST){
 
@@ -281,6 +271,12 @@ namespace vector_routing_protocol {
                 }
             }
             start_broadcasting_thread();
+        }
+
+
+        // allow address generation if not already made
+        if(!first_table_received){
+            first_table_received = true;
         }
 
     }
@@ -421,18 +417,28 @@ namespace vector_routing_protocol {
         while(true){
 
 
+            if(
+                (first_run && ta->context->first_table_received)
+                 || (first_run && (ta->context->wait_first_echo_recv_to <=0))
+        
+            ){
+                // generate random address from the first table we received
+                // or if the timeout is triggered and we still did not receive anything
+                puts("[+] first table received or the waiting timeout has been triggered.");
+                ta->context->THE_ADDRESSOR_20000.gen_random_addr();
+                first_run = false;
+            }
 
             Medium_Access_Control::mac_object.recalculate_wait_time();
             int ttw = Random::get(0,1000);// + Medium_Access_Control::mac_object.get_wait_time();
 
-            if(ta->context->broadcast_to  <= 0){
+            // broadcast only when we get an address
+            if((ta->context->broadcast_to  <= 0) && (!first_run) ){
                 puts("\nBC TIMEOUT");
                 ta->context->start_broadcasting_thread();
             }
 
 
-            //puts("[+] TICK -> sending new echo to all neighbours.");
-            //ta->context->print_interntal_table();
             for(int i = 1;i<=MAX_NODE_NUMBER;i++){
                 
                 ta->context->myRoutingTable[i]->TTL --;
@@ -456,6 +462,9 @@ namespace vector_routing_protocol {
             ta->context->inactive_neighbours_handling();
             //std::this_thread::sleep_for(std::chrono::milliseconds(TICK_TIME));
             ta->context->broadcast_to --;
+            if(first_run){
+                ta->context->wait_first_echo_recv_to --;
+            }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 

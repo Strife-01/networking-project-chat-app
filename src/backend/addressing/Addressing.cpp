@@ -102,9 +102,9 @@ unsigned char dynamic_addressing::get_my_addr(){
         size_t bytes_read = fread(&addr,sizeof(char),1,f);
         fclose(f);
     }else{
-        // create the file and put a bogus 0 value into it
+        // create the file and put a bogus 1 value into it
         f = fopen(file_name,"ab+");
-        unsigned char buff = 0;
+        unsigned char buff = 1;
         fwrite(&buff,sizeof(char),1, f);
         fclose(f);
 

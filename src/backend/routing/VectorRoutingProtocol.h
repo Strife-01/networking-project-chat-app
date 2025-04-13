@@ -16,6 +16,7 @@
 #define MAX_NODE_NUMBER 4
 #define MAX_TTL 100
 #define BROADCAST_TIMEOUT 15
+#define WAIT_FIRST_ECHO_RECV_TIMEOUT 30
 #define MEAN_RTT 100 // implement a real computation later
 #define TICK_TIME 1000
 
@@ -53,14 +54,15 @@ namespace vector_routing_protocol {
         void register_active_node(uint8_t i);
 
         unsigned int broadcast_to = BROADCAST_TIMEOUT; 
+        bool first_table_received = false;
+
+        unsigned int wait_first_echo_recv_to = WAIT_FIRST_ECHO_RECV_TIMEOUT;
 
     private:
         unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
         BlockingQueue< Message >* senderQueue;
         void init_internal_table();
         void handle_collision(uint8_t other_node);
-
-
 
 
 

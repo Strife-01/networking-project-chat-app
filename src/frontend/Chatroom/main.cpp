@@ -46,16 +46,17 @@ void real_main(ChatRoomWindow * w){
         packet_header::bytes_vector_to_header_int(
             packet_header::build_header(h)
         )
-    );*/
+    );
 
     vector_routing_protocol::VectorRoutingProtocol::print_pkt_header(h2);
+    */
 
-    printf("Insert static addr >>");
+    /*printf("Insert static addr >>");
     unsigned int node_addr;
     scanf("%d", &node_addr);
     getchar();
     printf("selected address : %d\n", node_addr);
-    dynamic_addressing::set_my_addr(node_addr);
+    dynamic_addressing::set_my_addr(node_addr);*/
 
     vector_routing_protocol::VectorRoutingProtocol v_r_proto(&senderQueue);
     v_r_proto.start_ticking_thread();
