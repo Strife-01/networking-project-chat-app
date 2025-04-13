@@ -26,11 +26,9 @@ namespace vector_routing_protocol {
         senderQueue = sq;
         // first a foremost, to route something we need our own address :)
         THE_ADDRESSOR_20000 = dynamic_addressing::DynamicAddressing();
-        //THE_ADDRESSOR_20000.gen_random_addr();
         // init routing table
         init_internal_table();
 
-        //THE_ADDRESSOR_20000.gen_random_addr();
     }
 
 
@@ -99,14 +97,20 @@ namespace vector_routing_protocol {
         //print_table(recv_routing_table);
 
 
+        uint8_t my_addr = THE_ADDRESSOR_20000.get_my_addr();
 
-        // myself
-        if(myRoutingTable.count(THE_ADDRESSOR_20000.get_my_addr()) <= 0){
-            Route * r = myRoutingTable[THE_ADDRESSOR_20000.get_my_addr()];
-            r->next_hop = THE_ADDRESSOR_20000.get_my_addr();
+        // register myself only when sure i have generated the right address
+        // to avoid having 1 (default addr) with a cost of zero in the table
+        if((!first_table_received) || (wait_first_echo_recv_to <= 0) ){
+
+            Route * r = myRoutingTable[my_addr];
+            r->next_hop = my_addr;
             r->cost = 0;
-            r->destination_node = THE_ADDRESSOR_20000.get_my_addr();
+            r->destination_node = my_addr;
+            
         }
+        puts("oui");
+
 
 
 
@@ -118,15 +122,14 @@ namespace vector_routing_protocol {
 
         //printf("%d\n",src_node_addr);
         // check if the sender of the table is a new neighbour of us
-        if(myRoutingTable[src_node_addr]->cost == INFINITY_COST || src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
+        if(myRoutingTable[src_node_addr]->cost == INFINITY_COST || src_node_addr == my_addr){
 
             printf("Got a new neighbor !! Discovered node %d\n",src_node_addr);
             //puts("Checking if it does not share the same address as ours");
 
-            if(src_node_addr == THE_ADDRESSOR_20000.get_my_addr()){
+            if(src_node_addr == my_addr){
                 
-                
-                
+                handle_collision(my_addr);
 
             }else{
                 //puts("Okay ! no collision, registering this new neighbour :D");
@@ -209,7 +212,7 @@ namespace vector_routing_protocol {
 
 
 
-                        if(dest_node != THE_ADDRESSOR_20000.get_my_addr()){
+                        if(dest_node != my_addr){
                             //printf("Got a new route !! Discovered node %d\n",dest_node);
                             // insert newly discovered route in the table
                             Route * r = myRoutingTable[src_node_addr];
@@ -237,7 +240,7 @@ namespace vector_routing_protocol {
 
                 if(
                 (myRoutingTable[dest_node]->next_hop == src_node_addr) 
-                && (dest_node != THE_ADDRESSOR_20000.get_my_addr())
+                && (dest_node != my_addr)
                 ){
 
                     changes_have_been_made = true;
@@ -254,9 +257,8 @@ namespace vector_routing_protocol {
 
         // updating active neighbours table in the dynamic addressing handler
 
-        THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable);
+        //THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable);
         
-        uint8_t my_addr = THE_ADDRESSOR_20000.get_my_addr();
         if(changes_have_been_made){
             for(int i=1;i<=MAX_NODE_NUMBER;i++){
 
@@ -270,13 +272,21 @@ namespace vector_routing_protocol {
                     notify_unreachable_node(i);
                 }
             }
-            start_broadcasting_thread();
+            // do not broadcast here, first we fill the address table
+            // then we generate the address if we have to
+            // and finally we broadcast the table
         }
 
-
+        
         // allow address generation if not already made
         if(!first_table_received){
             first_table_received = true;
+            // let time to the tick thread to tick
+            this_thread::sleep_for(std::chrono::milliseconds(2500));
+        }
+
+        if(changes_have_been_made){
+            start_broadcasting_thread();
         }
 
     }
@@ -389,12 +399,16 @@ namespace vector_routing_protocol {
             r->destination_node = i;
 
 
-            if(THE_ADDRESSOR_20000.get_my_addr() != i){
+            // not needed anymore as address is 1 by default
+            // and really determined only after a timeout
+            // this function being called in constructor
+            // the following chunk was not wishable anymore
+            /*if(THE_ADDRESSOR_20000.get_my_addr() != i){
                 r->cost = INFINITY_COST;
             }else{
                 r->cost = 0;
-            }
-            
+            }*/
+            r->cost = INFINITY_COST;
             r->next_hop = 0;
             r->TTL = MAX_TTL;
             myRoutingTable[i] = r;
@@ -429,8 +443,8 @@ namespace vector_routing_protocol {
                 first_run = false;
             }
 
-            Medium_Access_Control::mac_object.recalculate_wait_time();
-            int ttw = Random::get(0,1000);// + Medium_Access_Control::mac_object.get_wait_time();
+            //Medium_Access_Control::mac_object.recalculate_wait_time();
+            //int ttw = Random::get(0,1000);// + Medium_Access_Control::mac_object.get_wait_time();
 
             // broadcast only when we get an address
             if((ta->context->broadcast_to  <= 0) && (!first_run) ){
@@ -452,16 +466,24 @@ namespace vector_routing_protocol {
                 }
                 // ta->context->neighbors[i] || first_run
                 // always checking myself to make sure no cost bug
-                if(i == dynamic_addressing::get_my_addr() ){
-                    ta->context->myRoutingTable[i]->cost = 0;
-                    continue;
+
+                if(!first_run){
+                    if(i == dynamic_addressing::get_my_addr() ){
+                        ta->context->myRoutingTable[i]->cost = 0;
+                        continue;
+                    }
                 }
+   
                 //std::this_thread::sleep_for(std::chrono::milliseconds(ttw));
             }
 
             ta->context->inactive_neighbours_handling();
             //std::this_thread::sleep_for(std::chrono::milliseconds(TICK_TIME));
-            ta->context->broadcast_to --;
+            
+            // don't loop back to 2^31, it would be very unpleasant
+            if(ta->context->broadcast_to > 0){
+                ta->context->broadcast_to --;
+            }
             if(first_run){
                 ta->context->wait_first_echo_recv_to --;
             }
