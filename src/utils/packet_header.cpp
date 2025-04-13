@@ -34,20 +34,20 @@ std::vector<char> packet_header::build_header(const Header& h) {
     header |= static_cast<uint32_t>(h.payload_length) & PAYLOAD_LENGTH;
 
     std::vector<char> ret;
-    ret.push_back(static_cast<char>((header & 0xFF000000)>>24));
-    ret.push_back(static_cast<char>((header & 0x00FF0000)>>16));
-    ret.push_back(static_cast<char>((header & 0x0000FF00)>>8));
-    ret.push_back(static_cast<char>(header & 0x000000FF));
+    ret.push_back(static_cast<uint8_t>((header & 0xFF000000)>>24));
+    ret.push_back(static_cast<uint8_t>((header & 0x00FF0000)>>16));
+    ret.push_back(static_cast<uint8_t>((header & 0x0000FF00)>>8));
+    ret.push_back(static_cast<uint8_t>(header & 0x000000FF));
 
     return ret;
 }
 
 
 uint32_t packet_header::bytes_vector_to_header_int(std::vector<char> packet){
-    return ((packet[0] << 24) & 0xFF000000) 
-    | ((packet[1] << 16)  & 0x00FF0000)
-    | ((packet[2] << 8)  & 0x0000FF000 )
-    | (packet[3] & 0x000000FF);
+    return (static_cast<uint32_t>(static_cast<uint8_t>(packet[0])) << 24)
+         | (static_cast<uint32_t>(static_cast<uint8_t>(packet[1])) << 16)
+         | (static_cast<uint32_t>(static_cast<uint8_t>(packet[2])) << 8)
+         | (static_cast<uint32_t>(static_cast<uint8_t>(packet[3])));
 }
 
 std::vector<char> packet_header::add_header_to_payload(packet_header::Header h,std::vector<char> payload){

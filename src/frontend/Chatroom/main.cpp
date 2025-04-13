@@ -1,5 +1,6 @@
 #include "chatroomwindow.h"
 #include <QApplication>
+#include <bitset>
 #include <cstdio>
 #include <thread>
 #include <string>
@@ -30,6 +31,24 @@ void real_main(ChatRoomWindow * w){
 
     Client client = Client(SERVER_ADDR, SERVER_PORT, FREQUENCY, TOKEN, &senderQueue, &receiverQueue);
     client.startThread();
+
+    /*packet_header::Header h;
+    h.fragment_id = 1;
+    vector_routing_protocol::VectorRoutingProtocol::print_pkt_header(h);
+    
+    std::bitset<32> x(packet_header::bytes_vector_to_header_int(
+        packet_header::build_header(h)));
+
+    
+    std::cout<<x<<std::endl;
+    
+    packet_header::Header h2 =packet_header::get_separated_header(
+        packet_header::bytes_vector_to_header_int(
+            packet_header::build_header(h)
+        )
+    );*/
+
+    vector_routing_protocol::VectorRoutingProtocol::print_pkt_header(h2);
 
     printf("Insert static addr >>");
     unsigned int node_addr;
