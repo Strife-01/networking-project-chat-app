@@ -233,11 +233,14 @@ void ChatRoomWindow::updateMemberList(){
     members.clear();
     for(char i=1;i<=MAX_NODE_NUMBER;i++){
 
-        if(vector_routing_protocol::reachable_nodes[i] && i != dynamic_addressing::get_my_addr()){
-            QString addr = "Node_" +QString::number(i);
-            members.append(addr);
-            memberAddresses[addr] = i;
+        if(vector_routing_protocol::reachable_nodes.count(i) > 0){
+            if(vector_routing_protocol::reachable_nodes[i] && i != dynamic_addressing::get_my_addr()){
+                QString addr = "Node_" +QString::number(i);
+                members.append(addr);
+                memberAddresses[addr] = i;
+            }
         }
+
     }
 
     memberList->clear();

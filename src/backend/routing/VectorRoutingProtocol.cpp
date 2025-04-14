@@ -189,14 +189,26 @@ namespace vector_routing_protocol {
                             myRoutingTable[dest_node]->TTL =MAX_TTL;
                         }else{
 
-                            //printf("Incoming table did not propose a better path to node %d\n",dest_node);
-                            // last if do not check the case of non changing cost
-                            // but in that case, we don't want a new route,
-                            // just to reset TTL
 
-                            if(myRoutingTable[dest_node]->cost != potential_new_cost){
+                            // broadcast table to the other nodes
+                            // if they have worst path than us
+                            if((potential_new_cost > myRoutingTable[dest_node]->cost)
+
+                            && (myRoutingTable[dest_node]->next_hop != src_node_addr)
+                        
+                            ){
                                 changes_have_been_made = true;
+
                             }
+
+                            // we are getting confirmation of our table
+                            /*if((potential_new_cost == myRoutingTable[dest_node]->cost)
+
+                            && (myRoutingTable[dest_node]->next_hop != src_node_addr)
+                            ){
+                                myRoutingTable
+                            }*/
+                              
                             /*if(
                                 (myRoutingTable[dest_node]->cost == potential_new_cost)
                                  && (myRoutingTable[dest_node]->next_hop == src_node_addr)
@@ -256,13 +268,12 @@ namespace vector_routing_protocol {
 
         // updating active neighbours table in the dynamic addressing handler
 
-        //THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable);
         
         if(changes_have_been_made){
             for(int i=1;i<=MAX_NODE_NUMBER;i++){
 
                 // updating table of reachable nodes
-                if(myRoutingTable[i]->cost != INFINITY_COST){
+                if((myRoutingTable[i]->cost != INFINITY_COST)){
 
                     register_active_node(i);
 
@@ -276,6 +287,10 @@ namespace vector_routing_protocol {
             // and finally we broadcast the table
         }
 
+
+        THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(myRoutingTable);
+
+
         
         // allow address generation if not already made
         if(!first_table_received){
@@ -285,8 +300,18 @@ namespace vector_routing_protocol {
         }
 
         if(changes_have_been_made){
+            puts("[+] Changes have been made, broadcasting table...");
             start_broadcasting_thread();
+        }else{
+            puts("[+] No changes have been made, not broadcasting table.");
+            // add 5 to the broadcast timeout to delay new echo sending
+            // and save bandwidth
+            this->broadcast_to += 1;
         }
+
+
+        printf("[VARS] %d  ; %d\n",broadcast_to,!is_protocol_paused());
+
 
     }
 
@@ -423,7 +448,12 @@ namespace vector_routing_protocol {
 
     static void * tick(void * args) {
 
+
+        
+
         struct thread_args * ta = (struct thread_args *) args;
+
+        //ta->context->THE_ADDRESSOR_20000.update_connected_nodes_list_from_RT(ta->context->myRoutingTable);
 
         bool first_run = true;
 
@@ -446,21 +476,25 @@ namespace vector_routing_protocol {
             //int ttw = Random::get(0,1000);// + Medium_Access_Control::mac_object.get_wait_time();
 
             // broadcast only when we get an address
+            printf("[TICK] %d ; %d ; %d\n",ta->context->broadcast_to,!first_run,!ta->context->is_protocol_paused());
             if((ta->context->broadcast_to  <= 0) && (!first_run)  && (!ta->context->is_protocol_paused())){
-                puts("\nBC TIMEOUT");
+                puts("BC TIMEOUT");
                 ta->context->start_broadcasting_thread();
             }
 
 
             for(int i = 1;i<=MAX_NODE_NUMBER;i++){
                 
-                ta->context->myRoutingTable[i]->TTL --;
+                if(ta->context->myRoutingTable[i]->TTL > 0){
+                    ta->context->myRoutingTable[i]->TTL --;
+                }
 
                 if(ta->context->myRoutingTable[i]->TTL <= 0){
                     // if it was a neighbour, as the TTL expired,
                     // do not consider him as neighbour anymore
                     // in case of a topology change
                     ta->context->put_neighbour_as_inactive(i);
+                    
 
                 }
                 // ta->context->neighbors[i] || first_run
@@ -480,7 +514,8 @@ namespace vector_routing_protocol {
             //std::this_thread::sleep_for(std::chrono::milliseconds(TICK_TIME));
             
             // don't loop back to 2^31, it would be very unpleasant
-            if(ta->context->broadcast_to > 0){
+            // do not decrease the timeout if the protocol is paused
+            if((ta->context->broadcast_to > 0) && (!ta->context->is_protocol_paused())){
                 ta->context->broadcast_to --;
             }
             if(first_run){
@@ -489,8 +524,7 @@ namespace vector_routing_protocol {
 
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-        }
-    
+        }    
 
         free(ta); // Clean up memory if you're done
         return NULL;
@@ -525,9 +559,9 @@ namespace vector_routing_protocol {
                 
 
 
-            if(changes_have_been_made){
-                //start_broadcasting_thread();
-            }
+            /*if(changes_have_been_made){
+                start_broadcasting_thread();
+            }*/
 
 
         }
@@ -540,11 +574,11 @@ namespace vector_routing_protocol {
     }
 
     void VectorRoutingProtocol::register_active_node(uint8_t i){
-        THE_ADDRESSOR_20000.register_addr_used_by_another_node(i);
+        //THE_ADDRESSOR_20000.register_addr_used_by_another_node(i);
         reachable_nodes[i] = true;
     }
     void VectorRoutingProtocol::notify_unreachable_node(uint8_t i){
-        THE_ADDRESSOR_20000.remove_addr_used_by_another_node(i);
+        //THE_ADDRESSOR_20000.remove_addr_used_by_another_node(i);
         reachable_nodes[i] = false;
     }
 
@@ -567,28 +601,37 @@ namespace vector_routing_protocol {
     }
 
     void VectorRoutingProtocol::start_broadcasting_thread(){
-        pthread_t bc_thread_id;
-        struct thread_args * args = (struct thread_args *) malloc(sizeof(struct thread_args));
-    
-        args->context = this;
-        args->senderQueue = senderQueue;
+
+        // start a new thread if we don't already have an update pending
+        // to not flood the network
+        if(!update_broadcast_pending){
+            pthread_t bc_thread_id;
+            struct thread_args * args = (struct thread_args *) malloc(sizeof(struct thread_args));
         
-    
-        pthread_create(&bc_thread_id, NULL, vector_routing_protocol::broadcast_table, args);
+            args->context = this;
+            args->senderQueue = senderQueue;
+            
+            update_broadcast_pending = true;
+
+            pthread_create(&bc_thread_id, NULL, vector_routing_protocol::broadcast_table, args);
+        }
+
     }
 
 
 
     static void * broadcast_table(void * args){
 
+        
         vector_routing_protocol::thread_args * ta = (vector_routing_protocol::thread_args *)args;
 
+        
         // reset broadcast TTL
         ta->context->broadcast_to = BROADCAST_TIMEOUT;
 
 
         Medium_Access_Control::mac_object.recalculate_wait_time();
-        int ttw = Random::get(0,100);// + Medium_Access_Control::mac_object.get_wait_time();
+        int ttw = Random::get(0,400);// + Medium_Access_Control::mac_object.get_wait_time();
 
 
         std::vector<char> packet = ta->context->build_custom_echo(0);
@@ -598,27 +641,40 @@ namespace vector_routing_protocol {
         while(!sent){
             ////printf("TRYING TO SEND");
 
-            if(!Channel_State::chan_state.get_is_line_busy())
-            {
-
-                // sleep a random amount of time before sending
+            // as protocol could be paused during this separate thread
+            if(!ta->context->is_protocol_paused()){
+                if(!Channel_State::chan_state.get_is_line_busy())
+                {
     
-                this_thread::sleep_for(chrono::milliseconds(ttw));
-    
-                if(!Channel_State::chan_state.get_is_line_busy()
-            
-                ){
-                    Message sendMessage = Message(DATA, packet);
-                    ta->senderQueue->push(sendMessage); // if this is what you want
-                    //puts("SENT !");
-                    sent = true;
-                    // wait extra random ms if we had the chance to send.
-                    std::this_thread::sleep_for(std::chrono::milliseconds(Random::get(1000,2000)));
-                    
+                    // sleep a random amount of time before sending
+        
+                    this_thread::sleep_for(chrono::milliseconds(ttw));
+        
+                    if(!Channel_State::chan_state.get_is_line_busy()
+                
+                    ){
+                        Message sendMessage = Message(DATA, packet);
+                        ta->senderQueue->push(sendMessage); // if this is what you want
+                        puts("[i] Table update sent");
+                        sent = true;
+                        // wait extra random ms if we had the chance to send.
+                        std::this_thread::sleep_for(std::chrono::milliseconds(Random::get(1000,2000)));
+                        
+                    }
+        
+                }else{
+                    // update payload in case of change
+                    packet = ta->context->build_custom_echo(0);
                 }
-    
+            }else{
+                sent = true;
             }
+
+
+            
         }
+
+        ta->context->update_broadcast_pending = false;
 
 
         pthread_exit(0);
@@ -628,19 +684,22 @@ namespace vector_routing_protocol {
 
     void VectorRoutingProtocol::handle_collision(uint8_t other_node){
 
-        puts("Oh NOOO ! Address collision. Starting recovery process...");
+        if(first_table_received){
+            puts("Oh NOOO ! Address collision. Starting recovery process...");
         
-        THE_ADDRESSOR_20000.gen_random_addr(false);
+            THE_ADDRESSOR_20000.gen_random_addr(false);
+    
+            uint8_t new_addr = THE_ADDRESSOR_20000.get_my_addr();
+    
+    
+            Route * r = myRoutingTable[new_addr];//(Route *) malloc(sizeof(Route *));
+            r->destination_node = new_addr;
+            r->next_hop = new_addr;
+            r->cost = 0;
+            r->TTL =MAX_TTL;
+            myRoutingTable[new_addr]=r; 
+        }
 
-        uint8_t new_addr = THE_ADDRESSOR_20000.get_my_addr();
-
-
-        Route * r = myRoutingTable[new_addr];//(Route *) malloc(sizeof(Route *));
-        r->destination_node = new_addr;
-        r->next_hop = new_addr;
-        r->cost = 0;
-        r->TTL =MAX_TTL;
-        myRoutingTable[new_addr]=r; 
         
     }
 
@@ -655,25 +714,26 @@ namespace vector_routing_protocol {
     static void * resume_protocol_to(struct thread_args * ta){
         this_thread::sleep_for(std::chrono::minutes(PROTOCOL_PAUSE_TIMEOUT));
 
-        ta->context->resume_protocol();
+        VectorRoutingProtocol::resume_protocol();
+
+        puts("[+] Protocol pause finished, resuming sending echo requests...");
 
         pthread_exit(0);
     }
     void VectorRoutingProtocol::pause_protocol(){
-        this->pause_flag = true;
+        pause_flag = true;
 
         thread_args * ta = (thread_args * )malloc(sizeof(thread_args));
-        ta->context = this;
         thread resume_to(resume_protocol_to,ta);
         resume_to.detach();
     }
 
     void VectorRoutingProtocol::resume_protocol(){
-        this->pause_flag = false;
+        pause_flag = false;
     }
 
     bool VectorRoutingProtocol::is_protocol_paused(){
-        return this->pause_flag;
+        return pause_flag;
     }
 
 

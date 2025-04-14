@@ -14,17 +14,20 @@
 #define MAXIMUM_COST 7
 #define INFINITY_COST 5
 #define MAX_NODE_NUMBER 4
-#define MAX_TTL 100
-#define BROADCAST_TIMEOUT 15
+#define MAX_TTL 70
+#define BROADCAST_TIMEOUT 20
 #define WAIT_FIRST_ECHO_RECV_TIMEOUT 30
 #define MEAN_RTT 100 // implement a real computation later
 #define TICK_TIME 1000
 #define PROTOCOL_PAUSE_TIMEOUT 2
+#define MAX_BCAST_TIMEOUT 50
+
 
 namespace vector_routing_protocol {
 
     inline std::map<unsigned char,bool> neighbors;
     inline std::map<unsigned char,bool> reachable_nodes;
+    inline bool pause_flag = false;
 
     class VectorRoutingProtocol {
     public:
@@ -59,11 +62,12 @@ namespace vector_routing_protocol {
 
         unsigned int wait_first_echo_recv_to = WAIT_FIRST_ECHO_RECV_TIMEOUT;
 
-        bool pause_flag = false;
 
-        void pause_protocol();
-        void resume_protocol();
-        bool is_protocol_paused();
+        static void pause_protocol();
+        static void resume_protocol();
+        static bool is_protocol_paused();
+
+        bool update_broadcast_pending = false;
 
     private:
         unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
@@ -71,7 +75,7 @@ namespace vector_routing_protocol {
         void init_internal_table();
         void handle_collision(uint8_t other_node);
 
-
+        uint16_t current_bcast_timeout_max_value = BROADCAST_TIMEOUT;
 
 
 

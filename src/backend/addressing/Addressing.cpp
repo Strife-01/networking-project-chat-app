@@ -31,6 +31,23 @@ namespace dynamic_addressing {
         srandom(time(NULL));
         
         unsigned char tmp_addr = get_my_addr();
+
+        // if every addresses are marked as used, directly take default one (1)
+        // this case happens for the last node to come
+        bool all_used = true;
+        for(int i =1;i<=MAX_NODE_NUMBER;i++){
+            all_used = all_used & this->addr_in_use[i];
+        }
+
+        if(all_used){
+            puts("[+] Last address available was 1");
+            set_my_addr(tmp_addr);
+            printf("Randomly selected address : %d\n",tmp_addr);
+            return;
+        }
+
+
+
         // 50% chance to change its addr, as two nodes are concerned
         // override 50% chance of change if this is initalisation
         // so we don't have half the nodes getting 1 as addr
@@ -52,13 +69,14 @@ namespace dynamic_addressing {
 
         clear_nodes_addressing_map();
         
-        for(int i=0;i<=MAX_NODE_NUMBER;i++){
+        for(int i=1;i<=MAX_NODE_NUMBER;i++){
 
             // if the node exists
             if(rt.count(i) > 0)
             {
                 // if not ourselve or unreachable
-                if( (rt[i]->cost != 0) && (rt[i]->cost < INFINITY_COST) ){
+                if((rt[i]->cost < INFINITY_COST)){
+                    printf("\t[+] add %d as reachable node\n",i);
                     register_addr_used_by_another_node(i);
                 }       
             }

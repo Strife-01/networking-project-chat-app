@@ -72,6 +72,7 @@ void PrivateChatWindow::sendMessage(const QString &message)
             message.push_back(ba[i]);
         }
 
+        privateMessageInput->clear();
         tm->sendMessage(message, contactAddress, packet_header::types::data);
 
     }

@@ -93,6 +93,7 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
 
     // only send ACKs if this is not a broadcast
     if (!isBroadcast) {
+        puts("[TEST] skipping ack to not overflow the network");
         sendAck(header.message_id, header.fragment_id, header.source_address);
     } else {
         std::cout << "[BROADCAST] Received fragment " << header.fragment_id << " from " << (int)header.source_address << "\n";

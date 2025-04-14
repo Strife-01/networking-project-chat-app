@@ -103,6 +103,7 @@ void real_main(ChatRoomWindow * w){
 
     // handle messages from the server / audio framework
     while (true) {
+        w->updateMemberList();
         Message temp = receiverQueue.pop(); // wait for a message to arrive
         //receiverQueue.push(Message(DATA, full_packet));
 
@@ -118,7 +119,6 @@ void real_main(ChatRoomWindow * w){
             if (h.type == packet_header::echo) {
                 puts("[+] RECEIVED ECHO");
                 if(!v_r_proto.is_protocol_paused()){
-                    w->updateMemberList();
                     v_r_proto.register_echo(temp.data);
                 }else{
                     puts("\t[i] Protocol paused to liberate bandwith, not treating this echo request.");
@@ -128,7 +128,10 @@ void real_main(ChatRoomWindow * w){
             // handle DATA packet
             else if (h.type == packet_header::data) {
                 // traffic detected, pausing vector routing for 2 minutes
-                v_r_proto.pause_protocol();
+                if(!v_r_proto.is_protocol_paused()){
+                    puts("[+] Received actual data, pausing routing protocol for 2 min.");
+                    v_r_proto.pause_protocol();
+                }
                 transportManager.onPacketReceived(temp.data);
             }
             // handle ACK

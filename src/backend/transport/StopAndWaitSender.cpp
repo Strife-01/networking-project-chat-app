@@ -54,7 +54,13 @@ void StopAndWaitSender::sendFragments(const std::vector<std::pair<packet_header:
 }
 
 void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::vector<char>& payload) {
-    const int MAX_RETRIES = 5;
+    
+    if(!vector_routing_protocol::VectorRoutingProtocol::is_protocol_paused()){
+        vector_routing_protocol::VectorRoutingProtocol::pause_protocol();
+    }
+
+
+    const int MAX_RETRIES = 10;
     int attempts = 0;
 
     uint8_t my_addr = routing->THE_ADDRESSOR_20000.get_my_addr();
@@ -114,4 +120,6 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
     }
 
     std::cout << "[FAIL] Gave up on msg " << (int)header.message_id << ", frag " << header.fragment_id << "\n";
+
+    vector_routing_protocol::VectorRoutingProtocol::resume_protocol();
 }
