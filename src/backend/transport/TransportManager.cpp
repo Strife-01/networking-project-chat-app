@@ -1,5 +1,7 @@
 #include "TransportManager.h"
+#include <chrono>
 #include <iostream>
+#include <thread>
 #include <vector>
 #include "../MessageQueue/MessageQueue.h"
 
@@ -52,7 +54,16 @@ void TransportManager::sendMessage(std::vector<char> message, uint8_t dest, uint
             std::cout << "[TransportManager] No route to destination " << (int)dest << "\n";
             return;
         }
-        next_hop = routing->myRoutingTable[dest]->next_hop;
+        do{
+            next_hop = routing->myRoutingTable[dest]->next_hop;
+
+            // protection in case of table TTL trigger row reset right before sending
+            if(routing->myRoutingTable[dest]->cost >= INFINITY_COST){
+                this_thread::sleep_for(chrono::seconds(1));
+            }
+
+        }while(routing->myRoutingTable[dest]->cost >= INFINITY_COST);
+
         printf("\t[i] Next hop to %d is %d",dest,next_hop);
     }
 

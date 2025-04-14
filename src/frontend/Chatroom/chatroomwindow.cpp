@@ -217,7 +217,10 @@ void ChatRoomWindow::receivePrivateMessage(uint8_t sender, std::vector<char> msg
     chatWindow->privateChatDisplay->append(sender_str+" : " + message);
     chatWindow->privateMessageInput->clear();*/
 
-    QMessageBox::information(this, "New Message !",sender_str+" : " + message );
+    // Use QMetaObject::invokeMethod to ensure the QMessageBox is shown in the main thread
+    QMetaObject::invokeMethod(this, [this, sender_str, message]() {
+        QMessageBox::information(this, "New Message!", sender_str + ": " + message);
+    }, Qt::QueuedConnection);
 
 }
 
