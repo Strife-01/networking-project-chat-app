@@ -19,6 +19,7 @@
 #define WAIT_FIRST_ECHO_RECV_TIMEOUT 30
 #define MEAN_RTT 100 // implement a real computation later
 #define TICK_TIME 1000
+#define PROTOCOL_PAUSE_TIMEOUT 2
 
 namespace vector_routing_protocol {
 
@@ -58,11 +59,19 @@ namespace vector_routing_protocol {
 
         unsigned int wait_first_echo_recv_to = WAIT_FIRST_ECHO_RECV_TIMEOUT;
 
+        bool pause_flag = false;
+
+        void pause_protocol();
+        void resume_protocol();
+        bool is_protocol_paused();
+
     private:
         unsigned int nodes_count = 4; // set it to 1 as we only know ourselve first
         BlockingQueue< Message >* senderQueue;
         void init_internal_table();
         void handle_collision(uint8_t other_node);
+
+
 
 
 

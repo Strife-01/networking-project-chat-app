@@ -32,25 +32,6 @@ void real_main(ChatRoomWindow * w){
     Client client = Client(SERVER_ADDR, SERVER_PORT, FREQUENCY, TOKEN, &senderQueue, &receiverQueue);
     client.startThread();
 
-    /*packet_header::Header h;
-    h.fragment_id = 1;
-    vector_routing_protocol::VectorRoutingProtocol::print_pkt_header(h);
-    
-    std::bitset<32> x(packet_header::bytes_vector_to_header_int(
-        packet_header::build_header(h)));
-
-    
-    std::cout<<x<<std::endl;
-    
-    packet_header::Header h2 =packet_header::get_separated_header(
-        packet_header::bytes_vector_to_header_int(
-            packet_header::build_header(h)
-        )
-    );
-
-    vector_routing_protocol::VectorRoutingProtocol::print_pkt_header(h2);
-    */
-
     /*printf("Insert static addr >>");
     unsigned int node_addr;
     scanf("%d", &node_addr);
@@ -69,6 +50,11 @@ void real_main(ChatRoomWindow * w){
 
     // send outgoing transport packets using senderQueue
     transportManager.setSendFunction([&](const std::vector<char>& packet) {
+
+        if(!v_r_proto.is_protocol_paused()){
+            v_r_proto.pause_protocol();
+        }
+
         bool sent = false;
         int ttw = Random::get(0,100);
         puts("trying to send");
@@ -98,7 +84,7 @@ void real_main(ChatRoomWindow * w){
     });
 
     // handle full reassembled messages and queue them
-    transportManager.setOnMessageReady([&w](uint8_t addr,std::vector<char> msg) {
+    transportManager.setOnMessageReady([&](uint8_t addr,std::vector<char> msg) {
         std::string str(msg.begin(), msg.end());
         std::cout << "[DELIVERED] Full message: " << str << std::endl;
 
@@ -107,6 +93,9 @@ void real_main(ChatRoomWindow * w){
         }else{
             w->receivePrivateMessage(addr,msg);
         }
+
+
+        v_r_proto.resume_protocol();
 
     });
 
@@ -127,12 +116,19 @@ void real_main(ChatRoomWindow * w){
 
             // ECHO REQUEST HANDLING
             if (h.type == packet_header::echo) {
-                puts("RECEIVED ECHO");
-                w->updateMemberList();
-                v_r_proto.register_echo(temp.data);
+                puts("[+] RECEIVED ECHO");
+                if(!v_r_proto.is_protocol_paused()){
+                    w->updateMemberList();
+                    v_r_proto.register_echo(temp.data);
+                }else{
+                    puts("\t[i] Protocol paused to liberate bandwith, not treating this echo request.");
+                }
+
             }
             // handle DATA packet
             else if (h.type == packet_header::data) {
+                // traffic detected, pausing vector routing for 2 minutes
+                v_r_proto.pause_protocol();
                 transportManager.onPacketReceived(temp.data);
             }
             // handle ACK

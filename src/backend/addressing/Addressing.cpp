@@ -27,13 +27,14 @@ namespace dynamic_addressing {
     }
 
 
-    void DynamicAddressing::gen_random_addr(){
+    void DynamicAddressing::gen_random_addr(bool init){
         srandom(time(NULL));
-
         
         unsigned char tmp_addr = get_my_addr();
         // 50% chance to change its addr, as two nodes are concerned
-        if( (rand()%100 <= 50) || (tmp_addr == 0) ){
+        // override 50% chance of change if this is initalisation
+        // so we don't have half the nodes getting 1 as addr
+        if( (rand()%100 <= 50) || (tmp_addr == 0) || init){
             do{
 
                 tmp_addr = rand() % MAX_NODE_NUMBER+1;

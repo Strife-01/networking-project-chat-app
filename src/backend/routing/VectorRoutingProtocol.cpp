@@ -109,7 +109,6 @@ namespace vector_routing_protocol {
             r->destination_node = my_addr;
             
         }
-        puts("oui");
 
 
 
@@ -439,7 +438,7 @@ namespace vector_routing_protocol {
                 // generate random address from the first table we received
                 // or if the timeout is triggered and we still did not receive anything
                 puts("[+] first table received or the waiting timeout has been triggered.");
-                ta->context->THE_ADDRESSOR_20000.gen_random_addr();
+                ta->context->THE_ADDRESSOR_20000.gen_random_addr(true);
                 first_run = false;
             }
 
@@ -447,7 +446,7 @@ namespace vector_routing_protocol {
             //int ttw = Random::get(0,1000);// + Medium_Access_Control::mac_object.get_wait_time();
 
             // broadcast only when we get an address
-            if((ta->context->broadcast_to  <= 0) && (!first_run) ){
+            if((ta->context->broadcast_to  <= 0) && (!first_run)  && (!ta->context->is_protocol_paused())){
                 puts("\nBC TIMEOUT");
                 ta->context->start_broadcasting_thread();
             }
@@ -631,7 +630,7 @@ namespace vector_routing_protocol {
 
         puts("Oh NOOO ! Address collision. Starting recovery process...");
         
-        THE_ADDRESSOR_20000.gen_random_addr();
+        THE_ADDRESSOR_20000.gen_random_addr(false);
 
         uint8_t new_addr = THE_ADDRESSOR_20000.get_my_addr();
 
@@ -643,6 +642,38 @@ namespace vector_routing_protocol {
         r->TTL =MAX_TTL;
         myRoutingTable[new_addr]=r; 
         
+    }
+
+
+    /*
+    
+    The two following methods are used
+    to pause the protocol echos 
+    to free bandwith if we send/forward messages
+    */
+
+    static void * resume_protocol_to(struct thread_args * ta){
+        this_thread::sleep_for(std::chrono::minutes(PROTOCOL_PAUSE_TIMEOUT));
+
+        ta->context->resume_protocol();
+
+        pthread_exit(0);
+    }
+    void VectorRoutingProtocol::pause_protocol(){
+        this->pause_flag = true;
+
+        thread_args * ta = (thread_args * )malloc(sizeof(thread_args));
+        ta->context = this;
+        thread resume_to(resume_protocol_to,ta);
+        resume_to.detach();
+    }
+
+    void VectorRoutingProtocol::resume_protocol(){
+        this->pause_flag = false;
+    }
+
+    bool VectorRoutingProtocol::is_protocol_paused(){
+        return this->pause_flag;
     }
 
 
