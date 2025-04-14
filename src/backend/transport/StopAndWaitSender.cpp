@@ -60,7 +60,7 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
     }
 
 
-    const int MAX_RETRIES = 10;
+    const int MAX_RETRIES = 20;
     int attempts = 0;
 
     uint8_t my_addr = routing->THE_ADDRESSOR_20000.get_my_addr();
@@ -75,6 +75,7 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
 
         std::cout << "[BROADCAST] Sending broadcast fragment " << header.fragment_id << "\n";
 
+        
         if (sendFunc) {
             std::thread sf(sendFunc, packet);
             sf.detach();

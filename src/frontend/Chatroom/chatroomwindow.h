@@ -37,6 +37,7 @@ public:
     void updateMemberList();
     void receiveGlobalMessage(uint8_t sender, std::vector<char> msg);
     void receivePrivateMessage(uint8_t sender, std::vector<char> msg);
+    QHash<QString, uint8_t> memberAddresses;
 
 private slots:
     void handleMemberClick(QListWidgetItem *item);
@@ -48,7 +49,6 @@ private:
     QLabel* memberCountLabel;
     void setupGroupChatUI();
     QHash<QString, PrivateChatWindow*> privateChats; // Stores all active private chats
-    QHash<QString, uint8_t> memberAddresses;
     uint8_t myAddress;
 };
 

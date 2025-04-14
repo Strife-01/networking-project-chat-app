@@ -8,7 +8,7 @@
 #include "../../utils/packet_header.h"
 #include <set>
 
-#define TIMEOUT 1000
+#define TIMEOUT 30000
 
 class StopAndWaitReceiver {
 public:
