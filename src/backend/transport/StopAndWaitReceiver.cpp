@@ -57,7 +57,7 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
     packet_header::Header header = packet_header::get_separated_header(raw_header);
     uint8_t me = routing->THE_ADDRESSOR_20000.get_my_addr();
 
-    vector_routing_protocol::VectorRoutingProtocol::print_pkt_header(header);
+    //vector_routing_protocol::VectorRoutingProtocol::print_pkt_header(header);
 
     // BROADCAST HANDLING
     bool isBroadcast = (header.dest_address == 0);

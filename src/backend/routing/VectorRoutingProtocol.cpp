@@ -476,41 +476,45 @@ namespace vector_routing_protocol {
             //int ttw = Random::get(0,1000);// + Medium_Access_Control::mac_object.get_wait_time();
 
             // broadcast only when we get an address
-            printf("[TICK] %d ; %d ; %d\n",ta->context->broadcast_to,!first_run,!ta->context->is_protocol_paused());
+            //printf("[TICK] %d ; %d ; %d\n",ta->context->broadcast_to,!first_run,!ta->context->is_protocol_paused());
             if((ta->context->broadcast_to  <= 0) && (!first_run)  && (!ta->context->is_protocol_paused())){
                 puts("BC TIMEOUT");
                 ta->context->start_broadcasting_thread();
             }
 
 
-            for(int i = 1;i<=MAX_NODE_NUMBER;i++){
+            if(!ta->context->is_protocol_paused()){
+                for(int i = 1;i<=MAX_NODE_NUMBER;i++){
                 
-                if(ta->context->myRoutingTable[i]->TTL > 0){
-                    ta->context->myRoutingTable[i]->TTL --;
-                }
-
-                if(ta->context->myRoutingTable[i]->TTL <= 0){
-                    // if it was a neighbour, as the TTL expired,
-                    // do not consider him as neighbour anymore
-                    // in case of a topology change
-                    ta->context->put_neighbour_as_inactive(i);
-                    
-
-                }
-                // ta->context->neighbors[i] || first_run
-                // always checking myself to make sure no cost bug
-
-                if(!first_run){
-                    if(i == dynamic_addressing::get_my_addr() ){
-                        ta->context->myRoutingTable[i]->cost = 0;
-                        continue;
+                    if(ta->context->myRoutingTable[i]->TTL > 0){
+                        ta->context->myRoutingTable[i]->TTL --;
                     }
+    
+                    if(ta->context->myRoutingTable[i]->TTL <= 0){
+                        // if it was a neighbour, as the TTL expired,
+                        // do not consider him as neighbour anymore
+                        // in case of a topology change
+                        ta->context->put_neighbour_as_inactive(i);
+                        
+    
+                    }
+                    // ta->context->neighbors[i] || first_run
+                    // always checking myself to make sure no cost bug
+    
+                    if(!first_run){
+                        if(i == dynamic_addressing::get_my_addr() ){
+                            ta->context->myRoutingTable[i]->cost = 0;
+                            continue;
+                        }
+                    }
+       
+                    //std::this_thread::sleep_for(std::chrono::milliseconds(ttw));
                 }
-   
-                //std::this_thread::sleep_for(std::chrono::milliseconds(ttw));
+    
+                ta->context->inactive_neighbours_handling();
+
             }
 
-            ta->context->inactive_neighbours_handling();
             //std::this_thread::sleep_for(std::chrono::milliseconds(TICK_TIME));
             
             // don't loop back to 2^31, it would be very unpleasant

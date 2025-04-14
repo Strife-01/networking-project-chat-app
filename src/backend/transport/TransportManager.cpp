@@ -52,7 +52,8 @@ void TransportManager::sendMessage(std::vector<char> message, uint8_t dest, uint
             std::cout << "[TransportManager] No route to destination " << (int)dest << "\n";
             return;
         }
-        next_hop = routing->get_routing_table()[dest]->next_hop;
+        next_hop = routing->myRoutingTable[dest]->next_hop;
+        printf("\t[i] Next hop to %d is %d",dest,next_hop);
     }
 
     auto fragments = Fragmenter::fragmentMessage(
