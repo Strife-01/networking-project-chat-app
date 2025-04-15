@@ -1,6 +1,5 @@
 #include "chatroomwindow.h"
 #include <QApplication>
-#include <bitset>
 #include <cstdio>
 #include <thread>
 #include <string>
@@ -24,6 +23,15 @@ int FREQUENCY = 7800;
 std::string TOKEN = "cpp-03-7E6C90A2264E5B3996";
 using namespace std;
 
+
+
+static void update_ui(ChatRoomWindow * w){
+    while(true){
+        //printf("Updating ui\n");
+        w->updateMemberList();
+        this_thread::sleep_for(chrono::seconds(2));
+    }
+}
 
 void real_main(ChatRoomWindow * w){
     BlockingQueue< Message > receiverQueue; // Queue messages will arrive in
@@ -101,9 +109,12 @@ void real_main(ChatRoomWindow * w){
 
 
 
+
+    thread ui(update_ui,w);
+    ui.detach();
+
     // handle messages from the server / audio framework
     while (true) {
-        //w->updateMemberList();
         Message temp = receiverQueue.pop(); // wait for a message to arrive
         //receiverQueue.push(Message(DATA, full_packet));
 
