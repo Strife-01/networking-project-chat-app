@@ -618,6 +618,8 @@ namespace vector_routing_protocol {
             update_broadcast_pending = true;
 
             pthread_create(&bc_thread_id, NULL, vector_routing_protocol::broadcast_table, args);
+        }else{
+            broadcast_to = MAX_BCAST_TIMEOUT;
         }
 
     }
