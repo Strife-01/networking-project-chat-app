@@ -16,30 +16,36 @@ std::vector<char> Reassembler::insertFragment(
     fs.fragments[fragment_id] = payload;
 
     puts("buffer content :");
+    uint16_t last_fragment_id = 0; // only if one no-mf fragment has been recv
     for (int i = 0; i<= fragment_id; ++i, puts("")){
+
         for(int j=0;j<fs.fragments[i].size();j++){
             std::cout<< fs.fragments[i][j];
         }
 
     }
     
+    fs.is_complete = true;
+
     if (!MF) {
         fs.total_fragments = fragment_id+1;
-        fs.is_complete = true;
+        fs.MF_recv = true;
+    }
 
-        for(int i =0;i<fs.total_fragments;i++){
-            if(fs.fragments.count(i) > 0){
-                fs.is_complete = fs.is_complete && !fs.fragments[i].empty();
-            }else{
-                fs.is_complete = false;
-            }
+    for(int i =0;i<fs.total_fragments;i++){
+        if(fs.fragments.count(i) > 0){
+            fs.is_complete = fs.is_complete && !fs.fragments[i].empty();
+        }else{
+            fs.is_complete = false;
         }
     }
+
+
 
     printf("[+] Total number of fragments received : %zu\n",fs.fragments.size());
     printf("\t[i] Last fragment received : %d\n",fragment_id);
     printf("\t[i] Packet complete : %d\n",fs.is_complete);
-    if (fs.is_complete && fs.fragments.size() == fs.total_fragments) {
+    if (fs.is_complete && fs.MF_recv) {
         std::vector<char> full;
         for (uint16_t i = 0; i < fs.total_fragments; ++ i) {
             printf("Inserting fragment %d\n",i);

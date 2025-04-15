@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <mutex>
 #include <time.h>
 #include "Addressing.h"
 #include <stdio.h>
@@ -111,6 +112,8 @@ namespace dynamic_addressing {
 
 unsigned char dynamic_addressing::get_my_addr(){
 
+
+    std::lock_guard<std::mutex> guard(mu_addr_file);
     // avoid two processes sharing the same address storage file 
     char file_name[20]; 
     sprintf(file_name,"my_addr_%d.net",getpid());
@@ -134,6 +137,8 @@ unsigned char dynamic_addressing::get_my_addr(){
 
 void dynamic_addressing::set_my_addr(unsigned char addr){
 
+
+    std::lock_guard<std::mutex> guard(mu_addr_file);
     // avoid two processes sharing the same address storage file 
     char file_name[20]; 
     sprintf(file_name,"my_addr_%d.net",getpid());

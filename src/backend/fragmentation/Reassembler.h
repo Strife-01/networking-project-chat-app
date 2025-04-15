@@ -10,6 +10,7 @@ private:
         std::map<uint16_t, std::vector<char>> fragments;
         bool is_complete = false;
         uint16_t total_fragments = 0;
+        bool MF_recv = false;
     };
 
     std::map<uint8_t, FragmentSet> buffers;

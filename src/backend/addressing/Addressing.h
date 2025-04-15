@@ -4,6 +4,7 @@
 #define MAX_NODE_NUMBER 4
 #define CHANCE_TO_CHANGE 50
 #include "../routing/Route.h"
+#include <mutex>
 
 #ifndef INFINITY_COST
     #define INFINITY_COST 5
@@ -16,6 +17,7 @@ namespace dynamic_addressing {
 
     unsigned char get_my_addr();
     void set_my_addr(unsigned char);
+    inline std::mutex mu_addr_file;
     
     class DynamicAddressing{
         public:

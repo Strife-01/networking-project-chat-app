@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <mutex>
 #include <pthread.h>
 #include <stdio.h>
 #include <cstdio>
@@ -153,6 +154,7 @@ namespace vector_routing_protocol {
         for(unsigned char i =1;i<=MAX_NODE_NUMBER;i++){
 
 
+            if(my_addr == i) continue;
 
             // checking whether some destination is already in myRoutingTable, and accessing it:
             unsigned char dest_node = i;
@@ -306,7 +308,7 @@ namespace vector_routing_protocol {
             puts("[+] No changes have been made, not broadcasting table.");
             // add 5 to the broadcast timeout to delay new echo sending
             // and save bandwidth
-            this->broadcast_to += 1;
+            //this->broadcast_to += 1;
         }
 
 
@@ -579,10 +581,12 @@ namespace vector_routing_protocol {
 
     void VectorRoutingProtocol::register_active_node(uint8_t i){
         //THE_ADDRESSOR_20000.register_addr_used_by_another_node(i);
+        std::lock_guard<std::mutex> guard(mu_reachable_nodes);
         reachable_nodes[i] = true;
     }
     void VectorRoutingProtocol::notify_unreachable_node(uint8_t i){
         //THE_ADDRESSOR_20000.remove_addr_used_by_another_node(i);
+        std::lock_guard<std::mutex> guard(mu_reachable_nodes);
         reachable_nodes[i] = false;
     }
 
@@ -619,7 +623,7 @@ namespace vector_routing_protocol {
 
             pthread_create(&bc_thread_id, NULL, vector_routing_protocol::broadcast_table, args);
         }else{
-            broadcast_to = MAX_BCAST_TIMEOUT;
+            broadcast_to = BCAST_TIMEOUT;
         }
 
     }
@@ -633,7 +637,7 @@ namespace vector_routing_protocol {
 
         
         // reset broadcast TTL
-        ta->context->broadcast_to = BROADCAST_TIMEOUT;
+        ta->context->broadcast_to = BCAST_TIMEOUT;
 
 
         Medium_Access_Control::mac_object.recalculate_wait_time();
@@ -740,6 +744,12 @@ namespace vector_routing_protocol {
 
     bool VectorRoutingProtocol::is_protocol_paused(){
         return pause_flag;
+    }
+
+
+    std::map<unsigned char,bool> get_reachable_nodes(){
+        std::lock_guard<std::mutex> guard(mu_reachable_nodes);
+        return reachable_nodes;
     }
 
 

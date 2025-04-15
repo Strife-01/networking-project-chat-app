@@ -236,6 +236,9 @@ void ChatRoomWindow::updateMemberList(){
     members.clear();
     for(char i=1;i<=MAX_NODE_NUMBER;i++){
 
+        std::lock_guard<std::mutex> guard1(vector_routing_protocol::mu_reachable_nodes);
+        std::lock_guard<std::mutex> guard2(dynamic_addressing::mu_addr_file);
+
         if(vector_routing_protocol::reachable_nodes.count(i) > 0){
             if(vector_routing_protocol::reachable_nodes[i] && i != dynamic_addressing::get_my_addr()){
                 QString addr = "Node_" +QString::number(i);

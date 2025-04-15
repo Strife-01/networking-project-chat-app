@@ -56,7 +56,7 @@ void real_main(ChatRoomWindow * w){
         }
 
         bool sent = false;
-        int ttw = Random::get(0,100);
+        int ttw = Random::get(200,400);
         puts("trying to send");
         while(!sent){
 
@@ -103,7 +103,7 @@ void real_main(ChatRoomWindow * w){
 
     // handle messages from the server / audio framework
     while (true) {
-        w->updateMemberList();
+        //w->updateMemberList();
         Message temp = receiverQueue.pop(); // wait for a message to arrive
         //receiverQueue.push(Message(DATA, full_packet));
 

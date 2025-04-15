@@ -9,13 +9,14 @@
 #include "../addressing/Addressing.h"
 #include "../../utils/BlockingQueue.h"
 #include "../../utils/Message.h"
+#include <mutex>
 
 #define BROADCAST_ADDR 0
 #define MAXIMUM_COST 7
 #define INFINITY_COST 5
 #define MAX_NODE_NUMBER 4
-#define MAX_TTL 70
-#define BROADCAST_TIMEOUT 20
+#define MAX_TTL 40
+#define BCAST_TIMEOUT 20
 #define WAIT_FIRST_ECHO_RECV_TIMEOUT 30
 #define MEAN_RTT 100 // implement a real computation later
 #define TICK_TIME 1000
@@ -28,6 +29,7 @@ namespace vector_routing_protocol {
     inline std::map<unsigned char,bool> neighbors;
     inline std::map<unsigned char,bool> reachable_nodes;
     inline bool pause_flag = false;
+    inline std::mutex mu_reachable_nodes;
 
     class VectorRoutingProtocol {
     public:
@@ -57,7 +59,7 @@ namespace vector_routing_protocol {
         void notify_unreachable_node(uint8_t i);
         void register_active_node(uint8_t i);
 
-        unsigned int broadcast_to = BROADCAST_TIMEOUT; 
+        unsigned int broadcast_to = BCAST_TIMEOUT;
         bool first_table_received = false;
 
         unsigned int wait_first_echo_recv_to = WAIT_FIRST_ECHO_RECV_TIMEOUT;
@@ -75,7 +77,7 @@ namespace vector_routing_protocol {
         void init_internal_table();
         void handle_collision(uint8_t other_node);
 
-        uint16_t current_bcast_timeout_max_value = BROADCAST_TIMEOUT;
+        uint16_t current_bcast_timeout_max_value = BCAST_TIMEOUT;
 
 
 
@@ -84,6 +86,8 @@ namespace vector_routing_protocol {
 
     static void * tick(void * arg);
     static void * broadcast_table(void * args);
+
+    std::map<unsigned char,bool> get_reachable_nodes();
 
     struct thread_args {
         BlockingQueue< Message >* senderQueue;

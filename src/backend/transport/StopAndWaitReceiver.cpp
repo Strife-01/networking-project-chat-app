@@ -3,6 +3,7 @@
 #include <iostream>
 #include <thread>
 #include <tuple>
+#include <utility>
 #include "../../utils/Random.h"
 
 /*
@@ -64,17 +65,22 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
 
     // BROADCAST HANDLING
     bool isBroadcast = (header.dest_address == 0);
+    std::vector<char> payload(packet.begin() + 4, packet.begin()+header.payload_length+4);
 
     if (isBroadcast) {
 
         std::cout << "[BROADCAST] Received fragment " << header.fragment_id << " from " << (int)header.source_address << "\n";
 
-        auto id = std::make_tuple(header.source_address, header.message_id,static_cast<unsigned short int>(header.fragment_id));
-        if (seenBroadcasts.count(id)) return; // already seen message
-        seenBroadcasts.insert(id);
-
-        std::thread bc(sendBroadcast,this,header,packet);
-        bc.join();
+        auto id = std::make_pair(header.message_id,static_cast<unsigned short int>(header.fragment_id));
+        bool already_received = seenBroadcasts.count(id) > 0; // already seen message
+        
+        if(!already_received){
+            seenBroadcasts.insert(id);
+            std::thread bc(sendBroadcast,this,header,payload);
+            bc.join();
+        }else{
+            return;
+        }
         
     }
 
@@ -96,18 +102,18 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
         return;
     }
 
-    std::vector<char> payload(packet.begin() + 4, packet.begin()+header.payload_length+4);
 
     // only send ACKs if this is not a broadcast
     if (!isBroadcast) {
         sendAck(header.message_id, header.fragment_id, header.source_address);
     }
 
+
+    
     std::vector<char> full = reassembler.insertFragment(header.message_id, header.fragment_id,
                                                         header.more_fragments, payload);
     
     
-
     if (!full.empty() && onMessageReady) {
         std::cout << "[DELIVERED] " << (isBroadcast ? "Broadcast" : "Unicast")
                   << " message received (msg " << (int)header.message_id << ")\n";
