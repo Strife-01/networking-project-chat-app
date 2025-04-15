@@ -5,6 +5,7 @@
 #include <thread>
 #include <chrono>
 #include <vector>
+#include "../../utils/Random.h"
 
 /**
  * Fragments a message into packets
@@ -137,6 +138,6 @@ void StopAndWaitSender::sendBroadcast(StopAndWaitSender* sender_obj,packet_heade
 
         ++tries_count; 
 
-        this_thread::sleep_for(chrono::milliseconds(BCAST_TRIES_SLEEP));
+        this_thread::sleep_for(chrono::milliseconds(Random::get(MIN_BCAST_TRIES_SLEEP,MAX_BCAST_TRIES_SLEEP)));
     }
 }

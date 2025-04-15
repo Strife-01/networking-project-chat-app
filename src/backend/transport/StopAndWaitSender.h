@@ -8,8 +8,9 @@
 #include "../routing/VectorRoutingProtocol.h"
 #include "../../utils/packet_header.h"
 
-#define MAX_BCAST_TRIES 5
-#define BCAST_TRIES_SLEEP 1500
+#define MAX_BCAST_TRIES 7
+#define MAX_BCAST_TRIES_SLEEP 2000
+#define MIN_BCAST_TRIES_SLEEP 1000
 
 class StopAndWaitSender {
 public:

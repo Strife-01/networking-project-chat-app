@@ -3,6 +3,7 @@
 #include <iostream>
 #include <thread>
 #include <tuple>
+#include "../../utils/Random.h"
 
 /*
  *  Receives packets
@@ -134,7 +135,7 @@ void StopAndWaitReceiver::sendBroadcast(StopAndWaitReceiver* sender_obj,packet_h
 
         ++tries_count; 
 
-        this_thread::sleep_for(chrono::milliseconds(BCAST_TRIES_SLEEP));
+        this_thread::sleep_for(chrono::milliseconds(Random::get(MIN_BCAST_TRIES_SLEEP,MAX_BCAST_TRIES_SLEEP)));
 
     }
 }

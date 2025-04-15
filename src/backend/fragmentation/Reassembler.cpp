@@ -38,7 +38,7 @@ std::vector<char> Reassembler::insertFragment(
 
     printf("[+] Total number of fragments received : %zu\n",fs.fragments.size());
     printf("\t[i] Last fragment received : %d\n",fragment_id);
-    printf("\t[i] Packet complete : %d",fs.is_complete);
+    printf("\t[i] Packet complete : %d\n",fs.is_complete);
     if (fs.is_complete && fs.fragments.size() == fs.total_fragments) {
         std::vector<char> full;
         for (uint16_t i = 0; i < fs.total_fragments; ++ i) {
