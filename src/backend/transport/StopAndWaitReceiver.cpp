@@ -1,4 +1,5 @@
 #include "StopAndWaitReceiver.h"
+#include "StopAndWaitSender.h"
 #include <iostream>
 #include <thread>
 
@@ -63,9 +64,16 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
     bool isBroadcast = (header.dest_address == 0);
 
     if (isBroadcast) {
+
+        std::cout << "[BROADCAST] Received fragment " << header.fragment_id << " from " << (int)header.source_address << "\n";
+
         auto id = std::make_pair(header.source_address, header.message_id);
         if (seenBroadcasts.count(id)) return; // already seen message
         seenBroadcasts.insert(id);
+
+        std::thread bc(sendBroadcast,this,header,packet);
+        bc.detach();
+        
     }
 
     // FORWARDING CASE - we don't send an ack if it's a broadcast or if we are forwarding
@@ -86,17 +94,12 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
         return;
     }
 
-    // Handle delivery
-    // TO TEST
-    // REPLACED packet.end()
     std::vector<char> payload(packet.begin() + 4, packet.begin()+header.payload_length+4);
 
     // only send ACKs if this is not a broadcast
     if (!isBroadcast) {
         puts("[TEST] skipping ack to not overflow the network");
         sendAck(header.message_id, header.fragment_id, header.source_address);
-    } else {
-        std::cout << "[BROADCAST] Received fragment " << header.fragment_id << " from " << (int)header.source_address << "\n";
     }
 
     std::vector<char> full = reassembler.insertFragment(header.message_id, header.fragment_id,
@@ -108,5 +111,27 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
         std::cout << "[DELIVERED] " << (isBroadcast ? "Broadcast" : "Unicast")
                   << " message received (msg " << (int)header.message_id << ")\n";
         onMessageReady(full);
+    }
+
+
+}
+
+
+void StopAndWaitReceiver::sendBroadcast(StopAndWaitReceiver* sender_obj,packet_header::Header header,const std::vector<char>&payload){
+    int tries_count = 1;
+    while(tries_count<MAX_BCAST_TRIES){
+        header.next_hop_address = 0;
+        header.payload_length = payload.size();
+        std::vector<char> packet = packet_header::add_header_to_payload(header, payload);
+
+        std::cout << "[BROADCAST] Sending broadcast fragment " << header.fragment_id << "\n\t" << "try n°"<<tries_count<<std::endl;
+
+        
+        if (sender_obj->sendFunc) {
+            std::thread sf(sender_obj->sendFunc, packet);
+            sf.detach();
+        }
+
+        ++tries_count; 
     }
 }

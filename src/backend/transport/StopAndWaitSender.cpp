@@ -69,17 +69,9 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
     // handle broadcast case (dest = 0) -> HOW TO STOP A BROADCAST
     bool isBroadcast = (header.dest_address == 0);
     if (isBroadcast) {
-        header.next_hop_address = 0;
-        header.payload_length = payload.size();
-        std::vector<char> packet = packet_header::add_header_to_payload(header, payload);
 
-        std::cout << "[BROADCAST] Sending broadcast fragment " << header.fragment_id << "\n";
-
-        
-        if (sendFunc) {
-            std::thread sf(sendFunc, packet);
-            sf.detach();
-        }
+        std::thread bc(sendBroadcast,this,header,payload);
+        bc.detach();
 
         return; // if it's broadcast, don't wait for acks
     }
@@ -123,4 +115,24 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
     std::cout << "[FAIL] Gave up on msg " << (int)header.message_id << ", frag " << header.fragment_id << "\n";
 
     vector_routing_protocol::VectorRoutingProtocol::resume_protocol();
+}
+
+
+void StopAndWaitSender::sendBroadcast(StopAndWaitSender* sender_obj,packet_header::Header header,const std::vector<char>&payload){
+    int tries_count = 1;
+    while(tries_count<MAX_BCAST_TRIES){
+        header.next_hop_address = 0;
+        header.payload_length = payload.size();
+        std::vector<char> packet = packet_header::add_header_to_payload(header, payload);
+
+        std::cout << "[BROADCAST] Sending broadcast fragment " << header.fragment_id << "\n\t" << "try n°"<<tries_count<<std::endl;
+
+        
+        if (sender_obj->sendFunc) {
+            std::thread sf(sender_obj->sendFunc, packet);
+            sf.detach();
+        }
+
+        ++tries_count; 
+    }
 }

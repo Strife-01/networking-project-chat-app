@@ -4,7 +4,4 @@ Scuba Chat is a distributed, multi-hop, 4-nodes chat application designed for em
 
 
 TODO :
-- Fix fragment_id that is received always set to 0 (but sent with the right value)
-- Fix segfault in GUI after message
-- Dynamic addressing idea : when we connect and do not have an address, pick one not used  from the first echo request we get.
-if we timeout first, generate a random one.
+- fix broadcasting. Idea : broacast the same fragment 5 times separated by 3 seconds
