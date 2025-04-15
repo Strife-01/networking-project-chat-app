@@ -16,7 +16,7 @@ public:
     void setSendFunction(std::function<void(const std::vector<char>&)> sendFunc);
 
     // callback when a full message is received
-    void setOnMessageReady(std::function<void(uint8_t sender_addr,std::vector<char>)> callback);
+    void setOnMessageReady(std::function<void(uint8_t sender_addr,std::vector<char>, bool broadcast)> callback);
 
     // send a full application-layer message to a destination
     void sendMessage(std::vector<char> message, uint8_t dest, uint8_t type = packet_header::types::data);
@@ -33,7 +33,7 @@ private:
     StopAndWaitReceiver receiver;
 
     std::function<void(const std::vector<char>&)> sendFunc;
-    std::function<void(uint8_t addr,std::vector<char>)> onMessageReady;
+    std::function<void(uint8_t addr,std::vector<char>,bool broadcast)> onMessageReady;
 
     uint8_t next_msg_id = 0;
 };

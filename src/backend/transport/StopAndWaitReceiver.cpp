@@ -21,7 +21,7 @@ void StopAndWaitReceiver::setSendFunction(std::function<void(const std::vector<c
     sendFunc = callback;
 }
 
-void StopAndWaitReceiver::setOnMessageReady(std::function<void(std::vector<char>)> callback) {
+void StopAndWaitReceiver::setOnMessageReady(std::function<void(uint8_t addr,std::vector<char> message,bool broadcast)> callback) {
     // a message is ready when we have received all the fragments
     onMessageReady = callback;
 }
@@ -116,7 +116,7 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
     if (!full.empty() && onMessageReady) {
         std::cout << "[DELIVERED] " << (isBroadcast ? "Broadcast" : "Unicast")
                   << " message received (msg " << (int)header.message_id << ")\n";
-        onMessageReady(full);
+        onMessageReady(header.source_address,full,isBroadcast);
     }
 
 

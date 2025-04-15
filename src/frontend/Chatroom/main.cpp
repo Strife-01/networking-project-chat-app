@@ -92,14 +92,14 @@ void real_main(ChatRoomWindow * w){
     });
 
     // handle full reassembled messages and queue them
-    transportManager.setOnMessageReady([&](uint8_t addr,std::vector<char> msg) {
-        std::string str(msg.begin(), msg.end());
+    transportManager.setOnMessageReady([&](uint8_t addr,std::vector<char> message,bool broadcast) {
+        std::string str(message.begin(), message.end());
         std::cout << "[DELIVERED] Full message: " << str << std::endl;
 
-        if(addr == 0){
-            w->receiveGlobalMessage(addr,msg);
+        if(broadcast){
+            w->receiveGlobalMessage(addr,message);
         }else{
-            w->receivePrivateMessage(addr,msg);
+            w->receivePrivateMessage(addr,message);
         }
 
 

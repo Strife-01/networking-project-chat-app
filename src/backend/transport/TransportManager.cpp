@@ -16,7 +16,7 @@ TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtoco
         if (sendFunc) sendFunc(packet);
     });
 
-    receiver.setOnMessageReady([this](std::vector<char> message) {
+    receiver.setOnMessageReady([this](uint8_t addr,std::vector<char> message,bool broadcast) {
         uint8_t sender_addr = this->routing->THE_ADDRESSOR_20000.get_my_addr();
 
         std::string str_msg(message.begin(), message.end());
@@ -30,7 +30,7 @@ TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtoco
 
         Message_Queue::msg_queue.push_message(final_msg, sender_addr);
 
-        if (onMessageReady) onMessageReady(sender_addr, message);
+        if (onMessageReady) onMessageReady(sender_addr, message,broadcast);
     });
 }
 
@@ -38,7 +38,7 @@ void TransportManager::setSendFunction(std::function<void(const std::vector<char
     sendFunc = func;
 }
 
-void TransportManager::setOnMessageReady(std::function<void(uint8_t addr,std::vector<char>)> callback) {
+void TransportManager::setOnMessageReady(std::function<void(uint8_t addr,std::vector<char>,bool broadcast)> callback) {
     onMessageReady = callback;
 }
 

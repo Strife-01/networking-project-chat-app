@@ -18,7 +18,7 @@ public:
     StopAndWaitReceiver(vector_routing_protocol::VectorRoutingProtocol* routing);
 
     void setSendFunction(std::function<void(const std::vector<char>&)> callback);
-    void setOnMessageReady(std::function<void(std::vector<char>)> callback);
+    void setOnMessageReady(std::function<void(uint8_t addr,std::vector<char> message,bool broadcast)> callback);
 
     void onPacketReceived(const std::vector<char>& packet);
     std::function<void(std::vector<char>)> sendFunc;
@@ -30,6 +30,6 @@ private:
     // so we avoid infinte loops when broadcasting
     std::set<std::pair< uint8_t,uint16_t>> seenBroadcasts;
 
-    std::function<void(std::vector<char>)> onMessageReady;
+    std::function<void(uint8_t addr,std::vector<char> message,bool broadcast)> onMessageReady;
     void sendAck(uint8_t msg_id, uint16_t frag_id, uint8_t dest);
 };
