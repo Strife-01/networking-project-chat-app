@@ -9,6 +9,7 @@
 #include "../../utils/packet_header.h"
 
 #define MAX_BCAST_TRIES 5
+#define BCAST_TRIES_SLEEP 1500
 
 class StopAndWaitSender {
 public:

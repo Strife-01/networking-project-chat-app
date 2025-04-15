@@ -70,8 +70,10 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
     bool isBroadcast = (header.dest_address == 0);
     if (isBroadcast) {
 
+        
         std::thread bc(sendBroadcast,this,header,payload);
-        bc.detach();
+        // join to still send fragment by fragment
+        bc.join();
 
         return; // if it's broadcast, don't wait for acks
     }
@@ -134,5 +136,7 @@ void StopAndWaitSender::sendBroadcast(StopAndWaitSender* sender_obj,packet_heade
         }
 
         ++tries_count; 
+
+        this_thread::sleep_for(chrono::milliseconds(BCAST_TRIES_SLEEP));
     }
 }

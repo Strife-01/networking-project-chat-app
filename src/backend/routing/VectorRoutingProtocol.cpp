@@ -733,7 +733,7 @@ namespace vector_routing_protocol {
         thread resume_to(resume_protocol_to,ta);
         resume_to.detach();
     }
-
+    
     void VectorRoutingProtocol::resume_protocol(){
         pause_flag = false;
     }

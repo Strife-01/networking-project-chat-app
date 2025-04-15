@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <functional>
 #include "../routing/VectorRoutingProtocol.h"
@@ -25,7 +26,7 @@ private:
     Reassembler reassembler;
     multihop_relay::MultihopRelay relay;
     // so we avoid infinte loops when broadcasting
-    std::set<std::pair<uint8_t, uint8_t>> seenBroadcasts;
+    std::set<std::tuple<uint8_t, uint8_t,uint16_t>> seenBroadcasts;
 
     std::function<void(std::vector<char>)> onMessageReady;
 

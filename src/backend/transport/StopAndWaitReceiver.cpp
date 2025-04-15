@@ -2,6 +2,7 @@
 #include "StopAndWaitSender.h"
 #include <iostream>
 #include <thread>
+#include <tuple>
 
 /*
  *  Receives packets
@@ -67,12 +68,12 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
 
         std::cout << "[BROADCAST] Received fragment " << header.fragment_id << " from " << (int)header.source_address << "\n";
 
-        auto id = std::make_pair(header.source_address, header.message_id);
+        auto id = std::make_tuple(header.source_address, header.message_id,static_cast<unsigned short int>(header.fragment_id));
         if (seenBroadcasts.count(id)) return; // already seen message
         seenBroadcasts.insert(id);
 
         std::thread bc(sendBroadcast,this,header,packet);
-        bc.detach();
+        bc.join();
         
     }
 
@@ -98,7 +99,6 @@ void StopAndWaitReceiver::onPacketReceived(const std::vector<char>& packet) {
 
     // only send ACKs if this is not a broadcast
     if (!isBroadcast) {
-        puts("[TEST] skipping ack to not overflow the network");
         sendAck(header.message_id, header.fragment_id, header.source_address);
     }
 
@@ -133,5 +133,8 @@ void StopAndWaitReceiver::sendBroadcast(StopAndWaitReceiver* sender_obj,packet_h
         }
 
         ++tries_count; 
+
+        this_thread::sleep_for(chrono::milliseconds(BCAST_TRIES_SLEEP));
+
     }
 }
