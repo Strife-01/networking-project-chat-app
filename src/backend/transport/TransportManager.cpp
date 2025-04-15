@@ -1,9 +1,11 @@
 #include "TransportManager.h"
 #include <chrono>
+#include <cstdint>
 #include <iostream>
 #include <thread>
 #include <vector>
 #include "../MessageQueue/MessageQueue.h"
+#include "StopAndWaitSender.h"
 
 TransportManager::TransportManager(vector_routing_protocol::VectorRoutingProtocol* routing)
     : routing(routing), sender(routing), receiver(routing) {
@@ -43,10 +45,8 @@ void TransportManager::setOnMessageReady(std::function<void(uint8_t addr,std::ve
 }
 
 void TransportManager::sendMessage(std::vector<char> message, uint8_t dest, uint8_t type) {
-    uint8_t my_addr = routing->THE_ADDRESSOR_20000.get_my_addr();
     uint8_t msg_id = next_msg_id++;
 
-    uint8_t next_hop = 0;
 
     // for broadcast, no routing lookup
     if (dest != 0) {
@@ -54,24 +54,37 @@ void TransportManager::sendMessage(std::vector<char> message, uint8_t dest, uint
             std::cout << "[TransportManager] No route to destination " << (int)dest << "\n";
             return;
         }
-        do{
-            next_hop = routing->myRoutingTable[dest]->next_hop;
+    }
 
+    thread wts(wait_to_send,routing,message,dest,type,msg_id, &sender);
+    wts.detach();
+}
+
+void TransportManager::wait_to_send(vector_routing_protocol::VectorRoutingProtocol * routing,std::vector<char> message, uint8_t dest, uint8_t type, uint8_t msg_id, StopAndWaitSender * sender){
+    uint8_t next_hop = 0;
+    uint8_t my_addr = routing->THE_ADDRESSOR_20000.get_my_addr();
+
+    if(dest != 0){
+        do{
+
+            next_hop = routing->myRoutingTable[dest]->next_hop;
+    
             // protection in case of table TTL trigger row reset right before sending
             if(routing->myRoutingTable[dest]->cost >= INFINITY_COST){
                 this_thread::sleep_for(chrono::seconds(1));
             }
-
+    
         }while(routing->myRoutingTable[dest]->cost >= INFINITY_COST);
-
-        printf("\t[i] Next hop to %d is %d",dest,next_hop);
     }
+
+
+    printf("\t[i] Next hop to %d is %d",dest,next_hop);
 
     auto fragments = Fragmenter::fragmentMessage(
         message, my_addr, dest, next_hop, msg_id, type
     );
 
-    sender.sendFragments(fragments);
+    sender->sendFragments(fragments);
 }
 
 void TransportManager::onPacketReceived(const std::vector<char>& packet) {

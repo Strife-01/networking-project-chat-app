@@ -35,5 +35,7 @@ private:
     std::function<void(const std::vector<char>&)> sendFunc;
     std::function<void(uint8_t addr,std::vector<char>,bool broadcast)> onMessageReady;
 
+    static void wait_to_send(vector_routing_protocol::VectorRoutingProtocol * routing,std::vector<char> message, uint8_t dest, uint8_t type, uint8_t msg_id, StopAndWaitSender * sender);
+
     uint8_t next_msg_id = 0;
 };
