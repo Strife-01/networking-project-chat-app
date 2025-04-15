@@ -55,7 +55,9 @@ std::vector<char> Reassembler::insertFragment(
             //full.insert(full.end(), fs.fragments[i].begin(), fs.fragments[i].end());
         }
         buffers.erase(msg_id);
+        fs.is_complete = false;
         return full;
     }
+
     return {};
 }
