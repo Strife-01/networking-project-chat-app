@@ -1,13 +1,5 @@
 # Scuba Chat - Underwater Network System
 
-**Integration Project Report - Group 3**  
-Théo Mougnibas (3581497)  
-Zhicheng Jin (2425289)  
-Mihai Crușninschi (3339688)  
-Andrei Ursachi (3351912)  
-Sânziana Grecu (3367193)  
-Date: 2025.04.14
-
 Scuba Chat is a distributed, multi-hop, four-node chat application designed for emulated underwater sound communication. The system includes custom-built protocols for routing, addressing, and reliable data transmission, paired with a Qt-based GUI for user interaction.
 
 ---
@@ -152,18 +144,6 @@ Routing is done using vector routing (Bellman-Ford) with:
 
 ---
 
-## 👥 Team Contributions
-
-- **Théo Mougnibas**: Routing, Dynamic addressing, UI-Backend integration
-- **Zhicheng Jin**: GUI, Routing
-- **Mihai Crușninschi**: GUI, Node management
-- **Andrei Ursachi**: MAC layer, Architecture, Embedding logic
-- **Sânziana Grecu**: Reliable transport, Fragmentation & Assembly
-
-🟩 Théo was selected for the Green Card bonus.
-
----
-
 ## 🛠️ Build Instructions
 
 1. Open the project in **Qt Creator**.
@@ -171,24 +151,3 @@ Routing is done using vector routing (Bellman-Ford) with:
 3. Build and run the application directly via the IDE.
 
 ---
-
-## 📸 Appendix
-
-(See project `/screenshots` folder for GUI previews)
-
----
-
-## 🤖 AI Usage Disclaimer
-
-This project benefited from the use of ChatGPT for:
-- Refactoring C++ code
-- Exploring design patterns (e.g., type casting, fragmentation, GUI)
-- Brainstorming alternative protocol approaches
-
-All content was manually reviewed and revised by the team. Final responsibility for implementation and decisions lies with the authors.
-
----
-
-## 📄 License
-
-This project is developed for educational purposes as part of the Integration Project at the University of Twente.
