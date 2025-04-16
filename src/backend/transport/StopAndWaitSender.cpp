@@ -61,7 +61,7 @@ void StopAndWaitSender::sendWithRetry(packet_header::Header header, const std::v
     }
 
 
-    const int MAX_RETRIES = 20;
+    const int MAX_RETRIES = 7;
     int attempts = 0;
 
     uint8_t my_addr = routing->THE_ADDRESSOR_20000.get_my_addr();

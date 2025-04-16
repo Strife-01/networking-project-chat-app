@@ -497,6 +497,7 @@ namespace vector_routing_protocol {
                         // do not consider him as neighbour anymore
                         // in case of a topology change
                         ta->context->put_neighbour_as_inactive(i);
+                        ta->context->notify_unreachable_node(i);
                         
     
                     }
@@ -580,12 +581,12 @@ namespace vector_routing_protocol {
     }
 
     void VectorRoutingProtocol::register_active_node(uint8_t i){
-        //THE_ADDRESSOR_20000.register_addr_used_by_another_node(i);
+        THE_ADDRESSOR_20000.register_addr_used_by_another_node(i);
         std::lock_guard<std::mutex> guard(mu_reachable_nodes);
         reachable_nodes[i] = true;
     }
     void VectorRoutingProtocol::notify_unreachable_node(uint8_t i){
-        //THE_ADDRESSOR_20000.remove_addr_used_by_another_node(i);
+        THE_ADDRESSOR_20000.remove_addr_used_by_another_node(i);
         std::lock_guard<std::mutex> guard(mu_reachable_nodes);
         reachable_nodes[i] = false;
     }
@@ -722,7 +723,7 @@ namespace vector_routing_protocol {
     */
 
     static void * resume_protocol_to(struct thread_args * ta){
-        this_thread::sleep_for(std::chrono::minutes(PROTOCOL_PAUSE_TIMEOUT));
+        this_thread::sleep_for(std::chrono::seconds(PROTOCOL_PAUSE_TIMEOUT));
 
         VectorRoutingProtocol::resume_protocol();
 

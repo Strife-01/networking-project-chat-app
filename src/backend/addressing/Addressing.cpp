@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "../routing/VectorRoutingProtocol.h"
 using namespace std;
 
 
@@ -48,7 +49,7 @@ namespace dynamic_addressing {
         }
 
 
-
+        unsigned char last_addr = tmp_addr;
         // 50% chance to change its addr, as two nodes are concerned
         // override 50% chance of change if this is initalisation
         // so we don't have half the nodes getting 1 as addr
@@ -62,6 +63,13 @@ namespace dynamic_addressing {
             printf("Randomly selected address : %d\n",tmp_addr);
 
             set_my_addr(tmp_addr);
+        }
+
+        // make sure to not display one as connected node
+        if(init){
+            remove_addr_used_by_another_node(last_addr);
+            std::lock_guard<std::mutex> guard(vector_routing_protocol::mu_reachable_nodes);
+            vector_routing_protocol::reachable_nodes[last_addr] = false;
         }
 
     }

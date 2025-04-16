@@ -16,11 +16,11 @@
 #define INFINITY_COST 5
 #define MAX_NODE_NUMBER 4
 #define MAX_TTL 40
-#define BCAST_TIMEOUT 20
+#define BCAST_TIMEOUT 10
 #define WAIT_FIRST_ECHO_RECV_TIMEOUT 30
 #define MEAN_RTT 100 // implement a real computation later
 #define TICK_TIME 1000
-#define PROTOCOL_PAUSE_TIMEOUT 2
+#define PROTOCOL_PAUSE_TIMEOUT 80
 #define MAX_BCAST_TIMEOUT 50
 
 
